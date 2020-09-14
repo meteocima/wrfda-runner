@@ -1,10 +1,14 @@
 package fsutil
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
+
+	"github.com/hpcloud/tail"
 )
 
 // Path ...
@@ -55,7 +59,27 @@ func (tr *Transaction) Exists(file Path) bool {
 }
 
 // Copy ...
-func (tr *Transaction) Copy(from, to Path) {}
+func (tr *Transaction) Copy(from, to Path) {
+	if tr.Err != nil {
+		return
+	}
+	source, err := os.Open(tr.Root.JoinP(from).String())
+	if err != nil {
+		tr.Err = err
+		return
+	}
+	defer source.Close()
+
+	target, err := os.OpenFile(tr.Root.JoinP(to).String(), os.O_CREATE|os.O_WRONLY, os.FileMode(0664))
+	if err != nil {
+		tr.Err = err
+		return
+	}
+	defer target.Close()
+
+	_, tr.Err = io.Copy(target, source)
+
+}
 
 // Link ...
 func (tr *Transaction) Link(from, to Path) {
@@ -93,11 +117,81 @@ func (tr *Transaction) RmFile(file Path) {
 }
 
 // Run ...
-func (tr *Transaction) Run(cwd Path, command string) {
+func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...string) {
 	if tr.Err != nil {
 		return
 	}
-	os.Chdir(tr.Root.JoinP(cwd).String())
-	cmd := exec.Command(command)
-	tr.Err = cmd.Run()
+
+	cmd := exec.Command(command, args...)
+	cmd.Dir = tr.Root.JoinP(cwd).String()
+
+	if logFile != "" {
+		tr.Err = os.Remove(tr.Root.JoinP(logFile).String())
+		if os.IsNotExist(tr.Err) {
+			tr.Err = nil
+		}
+		if tr.Err != nil {
+			return
+		}
+	}
+
+	var tailProc *tail.Tail
+	var output io.ReadCloser
+	if logFile == "" {
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			tr.Err = err
+			return
+		}
+		output = stdout
+	} else {
+
+		tail, err := tail.TailFile(tr.Root.JoinP(logFile).String(), tail.Config{
+			Follow:    true,
+			MustExist: false,
+			ReOpen:    true,
+		})
+
+		if err != nil {
+			tr.Err = err
+			return
+		}
+		tailProc = tail
+
+		pread, pwrite := io.Pipe()
+
+		go func() {
+			for l := range tail.Lines {
+				pwrite.Write([]byte(l.Text + "\n"))
+				if l.Err != nil {
+					tr.Err = l.Err
+					break
+				}
+			}
+			pwrite.Close()
+		}()
+		output = pread
+
+	}
+
+	tr.Err = cmd.Start()
+	if tr.Err != nil {
+		return
+	}
+
+	go func() {
+		stdoutBuff := bufio.NewReader(output)
+		line, _, err := stdoutBuff.ReadLine()
+		for line != nil {
+			line, _, err = stdoutBuff.ReadLine()
+			if err != nil && err != io.EOF {
+				panic(err)
+			}
+			fmt.Println(string(line))
+		}
+	}()
+	tr.Err = cmd.Wait()
+	if tailProc != nil {
+		tailProc.Stop()
+	}
 }

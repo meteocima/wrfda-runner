@@ -80,11 +80,11 @@ time_window_max='{{.OneHAfterStart}}',
  end_second                    = 00,
 /
 &domains
- e_we                          =            523,
- e_sn                          =            448,
+ e_we                          =            216,
+ e_sn                          =            191,
  e_vert                        =             50,
- dx                            =           7500,
- dy                            =           7500,
+ dx                            =           22500,
+ dy                            =           22500,
 /
 &physics
  mp_physics                    = 6,
