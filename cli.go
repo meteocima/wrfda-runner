@@ -34,7 +34,7 @@ func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, a
 
 	targetNamelistFile, err := os.OpenFile(
 		path.Join(fs.Root.String(), target.String()),
-		os.O_CREATE|os.O_WRONLY,
+		os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 		os.FileMode(0644),
 	)
 	defer targetNamelistFile.Close()
