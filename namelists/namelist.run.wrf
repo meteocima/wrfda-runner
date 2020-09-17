@@ -1,6 +1,6 @@
 &time_control
  run_days                      = 0,
- run_hours                     = 3,
+ run_hours                     = {{.Hours}},
  run_minutes                   = 0,
  run_seconds                   = 0,
  start_year                    = {{.Start.Year}},   {{.Start.Year}},    {{.Start.Year}},
@@ -17,7 +17,7 @@
  end_second                    =             00,            00,            00,
  interval_seconds              = 3600,
  input_from_file               =         .true.,        .true.,        .true.,
- history_interval              =            240,           240,           240,
+ history_interval              =            60,           60,           60,
  frames_per_outfile            =              1,             1,             1,
  restart                       = .false.,
  restart_interval              = 360,
@@ -27,21 +27,15 @@
  io_form_boundary              = 2,
  io_form_auxinput4             = 2,
  auxinput4_inname              = "wrflowinp_d<domain>",
- auxinput4_interval            =            180,           180,           180,
- auxhist23_interval            =            240,           240,           240,
+ auxinput4_interval            =            18000,           18000,           18000,
+ auxhist23_interval            =            60,           60,           60,
  adjust_output_times           = .true.
  frames_per_auxhist23          =              1,             1,             1,
  io_form_auxhist23             = 2,
- iofields_filename             =  "wrf_var.txt", "wrf_var.txt", "wrf_var.txt",
  ignore_iofields_warning       = .true.,
  nwp_diagnostics               = 1,
  debug_level                   = 0,
- write_input                   = .true.,
- inputout_interval             =            180,           180,           180,
- inputout_begin_h              =              3,             3,             3,
- inputout_end_h                =              3,             3,             3,
- inputout_end_m                =             10,            10,            10,
- input_outname                 = "wrfvar_input_d<domain>",
+ write_input                   = .false.,
 /
 
 &domains

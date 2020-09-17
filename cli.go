@@ -94,15 +94,15 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 		return
 	}
 
-	var wrfPrg fsutil.Path
+	wrfPrg := wrfPrgStep
+	nameListName := "namelist.step.wrf"
 
 	dtStart := start.Add(3 * time.Duration(step-3) * time.Hour)
 	dtEnd := dtStart.Add(3 * time.Hour)
 	if step == 3 {
 		dtEnd = end
 		wrfPrg = wrfPrgMainRun
-	} else {
-		wrfPrg = wrfPrgStep
+		nameListName = "namelist.run.wrf"
 	}
 
 	wrfDir := fsutil.PathF("wrf%02d", dtStart.Hour())
@@ -115,7 +115,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	// build namelist for wrf
 	renderNameList(
 		fs,
-		"namelist.wrf",
+		nameListName,
 		wrfDir.Join("namelist.input"),
 		namelist.Args{
 			Start: dtStart,
