@@ -268,22 +268,22 @@ func main() {
 	}
 
 	startDate := time.Date(2020, 07, 15, 12, 0, 0, 0, time.UTC)
-	endDate := time.Date(2020, 07, 17, 12, 0, 0, 0, time.UTC)
+	endDate := time.Date(2020, 07, 16, 12, 0, 0, 0, time.UTC)
 
 	/*
 		buildWPSDir(&fs, startDate, endDate)
 		runWPS(&fs, startDate, endDate)
 	*/
-	for step := 3; step <= 3; step++ {
-		/*
-			// execute real
-			buildNamelistForReal(&fs, startDate, endDate, step)
-			runReal(&fs)
+	for step := 1; step <= 3; step++ {
 
-			// first step of assimilation
-			buildDAStepDir(&fs, startDate, endDate, step)
-			runDAStep(&fs, startDate, step)
-		*/
+		// execute real
+		buildNamelistForReal(&fs, startDate, endDate, step)
+		runReal(&fs)
+
+		// first step of assimilation
+		buildDAStepDir(&fs, startDate, endDate, step)
+		runDAStep(&fs, startDate, step)
+
 		// three hours of WRF forecast
 		buildWRFDir(&fs, startDate, endDate, step)
 		runWRFStep(&fs, startDate, step)
