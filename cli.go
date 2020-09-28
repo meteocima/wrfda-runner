@@ -7,9 +7,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/meteocima/dewetra-radar-download/dds"
 	namelist "github.com/meteocima/namelist-prepare/namelist"
-	"github.com/meteocima/radar2wrf/radar"
 	"github.com/meteocima/wrfassim/fsutil"
 )
 
@@ -237,10 +235,10 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 }
 
 func buildDAStepDir(fs *fsutil.Transaction, start, end time.Time, step int) {
-	assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
+	//assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 
-	dds.DownloadRadar(assimStartDate)
-	radar.Convert(".", assimStartDate.Format("2006010214"))
+	//dds.DownloadRadar(assimStartDate)
+	//radar.Convert(".", assimStartDate.Format("2006010214"))
 
 	buildDADirInDomain(fs, start, end, step, 1)
 	buildDADirInDomain(fs, start, end, step, 2)
@@ -277,8 +275,8 @@ func main() {
 	startDate := time.Date(2020, 07, 15, 12, 0, 0, 0, time.UTC)
 	endDate := time.Date(2020, 07, 16, 12, 0, 0, 0, time.UTC)
 
-	buildWPSDir(&fs, startDate, endDate)
-	runWPS(&fs, startDate, endDate)
+	//buildWPSDir(&fs, startDate, endDate)
+	//runWPS(&fs, startDate, endDate)
 
 	for step := 1; step <= 3; step++ {
 
