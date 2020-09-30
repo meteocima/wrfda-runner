@@ -123,6 +123,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 		},
 	)
 
+	fs.Save(wrfDir.Join("wrf_var.txt"), "\n")
 	fs.Link(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
 	fs.Link(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
 	fs.Link(wrfPrg.Join("run/ozone_plev.formatted"), wrfDir.Join("ozone_plev.formatted"))

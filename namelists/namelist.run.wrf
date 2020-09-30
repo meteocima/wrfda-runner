@@ -29,10 +29,11 @@
  auxinput4_inname              = "wrflowinp_d<domain>",
  auxinput4_interval            =            18000,           18000,           18000,
  auxhist23_interval            =            60,           60,           60,
+ iofields_filename             =  "wrf_var.txt", "wrf_var.txt", "wrf_var.txt"
+ ignore_iofields_warning       = .true.,
  adjust_output_times           = .true.
  frames_per_auxhist23          =              1,             1,             1,
  io_form_auxhist23             = 2,
- ignore_iofields_warning       = .true.,
  nwp_diagnostics               = 1,
  debug_level                   = 0,
  write_input                   = .false.,

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -70,7 +71,7 @@ func (tr *Transaction) Copy(from, to Path) {
 	}
 	defer source.Close()
 
-	target, err := os.OpenFile(tr.Root.JoinP(to).String(), os.O_CREATE|os.O_WRONLY, os.FileMode(0664))
+	target, err := os.OpenFile(tr.Root.JoinP(to).String(), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(0664))
 	if err != nil {
 		tr.Err = err
 		return
@@ -79,6 +80,19 @@ func (tr *Transaction) Copy(from, to Path) {
 
 	_, tr.Err = io.Copy(target, source)
 
+}
+
+// Save ...
+func (tr *Transaction) Save(targetPath Path, content []byte) {
+	if tr.Err != nil {
+		return
+	}
+
+	tr.Err = ioutil.WriteFile(
+		tr.Root.JoinP(targetPath).String(),
+		content,
+		os.FileMode(0664),
+	)
 }
 
 // Link ...

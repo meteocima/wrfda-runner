@@ -32,6 +32,7 @@
  adjust_output_times           = .true.
  frames_per_auxhist23          =              1,             1,             1,
  io_form_auxhist23             = 2,
+ iofields_filename             =  "wrf_var.txt", "wrf_var.txt", "wrf_var.txt"
  ignore_iofields_warning       = .true.,
  nwp_diagnostics               = 1,
  debug_level                   = 0,
