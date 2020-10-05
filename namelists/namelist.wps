@@ -41,7 +41,7 @@
  io_form_metgrid               = 2,
  {{.MetGridConstants}}
  opt_output_from_metgrid_path  = '.',
- opt_metgrid_tbl_path          = './metgrid',
+ opt_metgrid_tbl_path          = '../wpsprg/metgrid',
 /
 
 &mod_levs
