@@ -80,7 +80,7 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 		return
 	}
 	fmt.Println("running geogrid")
-	fs.Run(wpsDir, "geogrid.log.0000", "mpirun", "-n", "84", "./geogrid.exe")
+	fs.Run(wpsDir, wpsDir.Join("geogrid.log.0000"), "mpirun", "-n", "84", "./geogrid.exe")
 	fmt.Println("running linkgrib", fmt.Sprintf("../../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
 	fs.Run(wpsDir, "", "link_grib.csh", fmt.Sprintf("../../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
 	fmt.Println("running ungrib")
@@ -90,7 +90,7 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 		fs.Run(wpsDir, "", "./avg_tsfc.exe")
 	}
 	fmt.Println("running metgrid")
-	fs.Run(wpsDir, "metgrid.log.0000", "mpirun", "-n", "84", "./metgrid.exe")
+	fs.Run(wpsDir, wpsDir.Join("metgrid.log.0000"), "mpirun", "-n", "84", "./metgrid.exe")
 }
 
 func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
