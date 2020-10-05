@@ -43,6 +43,8 @@ func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, a
 		log.Fatalf("open namelist.real: %s", err.Error())
 	}
 
+	args.Hours = int(args.End.Sub(args.Start).Hours())
+
 	tmpl := namelist.Tmpl{}
 	tmpl.ReadTemplateFrom(tmplFile)
 	tmpl.RenderTo(args, targetNamelistFile)
