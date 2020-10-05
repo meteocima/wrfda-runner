@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"sync"
 
 	"github.com/hpcloud/tail"
 )
@@ -149,15 +150,39 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 		}
 	}
 
+	output, pwrite := io.Pipe()
+
 	var tailProc *tail.Tail
-	var output io.ReadCloser
 	if logFile == "" {
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			tr.Err = err
 			return
 		}
-		output = stdout
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			tr.Err = err
+			return
+		}
+
+		go func() {
+			done := sync.WaitGroup{}
+			done.Add(2)
+			go func() {
+				io.Copy(pwrite, stdout)
+				done.Done()
+			}()
+
+			go func() {
+				io.Copy(pwrite, stderr)
+				done.Done()
+			}()
+
+			done.Wait()
+
+			pwrite.Close()
+		}()
+
 	} else {
 
 		tail, err := tail.TailFile(tr.Root.JoinP(logFile).String(), tail.Config{
@@ -172,8 +197,6 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 		}
 		tailProc = tail
 
-		pread, pwrite := io.Pipe()
-
 		go func() {
 			for l := range tail.Lines {
 				pwrite.Write([]byte(l.Text + "\n"))
@@ -184,7 +207,6 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 			}
 			pwrite.Close()
 		}()
-		output = pread
 
 	}
 
