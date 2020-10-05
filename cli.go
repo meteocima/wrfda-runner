@@ -81,8 +81,8 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 	}
 	fmt.Println("running geogrid")
 	fs.Run(wpsDir, "", "mpirun", "-n", "84", "./geogrid.exe")
-	fmt.Println("running linkgrib", fmt.Sprintf("../gfs/%s/*", start.Format("2006/01/02/1504")))
-	fs.Run(wpsDir, "", "link_grib.csh", fmt.Sprintf("../gfs/%s/*", start.Format("2006/01/02/1504")))
+	fmt.Println("running linkgrib", fmt.Sprintf("../../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
+	fs.Run(wpsDir, "", "link_grib.csh", fmt.Sprintf("../../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
 	fmt.Println("running ungrib")
 	fs.Run(wpsDir, "", "./ungrib.exe")
 	if end.Sub(start) > 24*time.Hour {
