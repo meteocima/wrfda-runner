@@ -61,7 +61,7 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 		"namelist.wps",
 		wpsDir.Join("namelist.wps"),
 		namelist.Args{
-			Start: start,
+			Start: start.Add(-6 * time.Hour),
 			End:   end,
 		},
 	)
