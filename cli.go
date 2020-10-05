@@ -72,6 +72,7 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 	fs.Link(wpsPrg.Join("util/avg_tsfc.exe"), wpsDir.Join("avg_tsfc.exe"))
 	fs.Link(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
 	fs.Link(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
+	fs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
 
 }
 
