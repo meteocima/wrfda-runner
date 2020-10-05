@@ -25,8 +25,8 @@
  truelat1                      = 47,
  truelat2                      = 0,
  stand_lon                     = 15,
- geog_data_path                = './geog',
- opt_geogrid_tbl_path          = './geogrid',
+ geog_data_path                = '../geodata',
+ opt_geogrid_tbl_path          = '../wpsprg/geogrid',
  ref_x                         = 108,
  ref_y                         = 95.5,
 /
