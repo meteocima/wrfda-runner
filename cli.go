@@ -286,7 +286,7 @@ func main() {
 	//buildWPSDir(&fs, startDate, endDate)
 	//runWPS(&fs, startDate, endDate)
 
-	for step := 1; step <= 3; step++ {
+	for step := 2; step <= 3; step++ {
 
 		// execute real
 		buildNamelistForReal(&fs, startDate, endDate, step)
