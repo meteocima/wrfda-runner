@@ -84,8 +84,8 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 	}
 	fmt.Println("running geogrid")
 	fs.Run(wpsDir, wpsDir.Join("geogrid.log.0000"), "mpirun", "-n", "84", "./geogrid.exe")
-	fmt.Println("running linkgrib", fmt.Sprintf("../../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
-	fs.Run(wpsDir, "", "./link_grib.csh", fmt.Sprintf("../../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
+	fmt.Println("running linkgrib", fmt.Sprintf("../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
+	fs.Run(wpsDir, "", "./link_grib.csh", fmt.Sprintf("../gfs/%s/*", start.Add(-6*time.Hour).Format("2006/01/02/1504")))
 	fmt.Println("running ungrib")
 	fs.Run(wpsDir, "", "./ungrib.exe")
 	if end.Sub(start) > 24*time.Hour {
@@ -280,13 +280,12 @@ func main() {
 		log.Fatalf("Directory not found: %s", rootDir)
 	}
 
-	startDate := time.Date(2019, 5, 11, 12, 0, 0, 0, time.UTC)
-	endDate := time.Date(2019, 5, 13, 12, 0, 0, 0, time.UTC)
+	startDate := time.Date(2018, 8, 2, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(2018, 8, 4, 0, 0, 0, 0, time.UTC)
 
-	//buildWPSDir(&fs, startDate, endDate)
-	//runWPS(&fs, startDate, endDate)
-
-	for step := 2; step <= 3; step++ {
+	buildWPSDir(&fs, startDate, endDate)
+	runWPS(&fs, startDate, endDate)
+	for step := 1; step <= 3; step++ {
 
 		// execute real
 		buildNamelistForReal(&fs, startDate, endDate, step)
@@ -299,7 +298,6 @@ func main() {
 		// three hours of WRF forecast
 		buildWRFDir(&fs, startDate, endDate, step)
 		runWRFStep(&fs, startDate, step)
-
 	}
 
 	if fs.Err != nil {
