@@ -52,7 +52,7 @@
  e_we                          =            216,           523,           430,
  e_sn                          =            191,           448,           469,
  e_vert                        =             50,            50,            50,
- use_adaptive_time_step        = .true.,
+ use_adaptive_time_step        = .false.,
  step_to_output_time           = .true.,
  target_cfl                    =              1,             1,             1,
  target_hcfl                   =           0.84,          0.84,          0.84,
