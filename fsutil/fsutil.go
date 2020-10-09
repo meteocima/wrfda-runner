@@ -139,7 +139,7 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 	if tr.Err != nil {
 		return
 	}
-	fmt.Fprintf(os.Stderr, "run %s\n", command)
+	fmt.Fprintf(os.Stderr, "run %s %s\n", command, args)
 	cmd := exec.Command(command, args...)
 	cmd.Dir = tr.Root.JoinP(cwd).String()
 
