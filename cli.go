@@ -279,17 +279,24 @@ func runReal(fs *fsutil.Transaction) {
 
 func main() {
 
-	rootDir := fsutil.Path(os.Args[1])
+	startDate := time.Date(2018, 8, 2, 0, 0, 0, 0, time.UTC)
+	err := runWRFDA(os.Args[1], startDate)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func runWRFDA(rootPath string, startDate time.Time) error {
+	rootDir := fsutil.Path(rootPath)
+	endDate := startDate.Add(48 * time.Hour)
+
 	fs := fsutil.Transaction{Root: rootDir}
 	if !fs.Exists(".") {
 		log.Fatalf("Directory not found: %s", rootDir)
 	}
 
-	startDate := time.Date(2018, 8, 2, 0, 0, 0, 0, time.UTC)
-	endDate := time.Date(2018, 8, 4, 0, 0, 0, 0, time.UTC)
-
-	//buildWPSDir(&fs, startDate, endDate)
-	//runWPS(&fs, startDate, endDate)
+	buildWPSDir(&fs, startDate, endDate)
+	runWPS(&fs, startDate, endDate)
 	for step := 3; step <= 3; step++ {
 
 		// execute real
@@ -305,8 +312,6 @@ func main() {
 		runWRFStep(&fs, startDate, step)
 	}
 
-	if fs.Err != nil {
-		log.Fatal(fs.Err)
-	}
+	return fs.Err
 
 }
