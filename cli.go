@@ -117,7 +117,11 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	fs.MkDir(wrfDir)
 
 	// boundary from WPS
-	fs.Copy(wpsDir.Join("wrfbdy_d01"), wrfDir.Join("wrfbdy_d01"))
+
+	daBdy := fsutil.PathF("da%02d_d01/wrfbdy_d01", dtStart.Hour())
+
+	// from same cycle da dir for domain 1
+	fs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
 
 	// build namelist for wrf
 	renderNameList(
