@@ -281,7 +281,7 @@ func runReal(fs *fsutil.Transaction) {
 
 func main() {
 
-	startDate := time.Date(2018, 8, 2, 0, 0, 0, 0, time.UTC)
+	startDate := time.Date(2020, 7, 15, 12, 0, 0, 0, time.UTC)
 	err := runWRFDA(os.Args[1], startDate)
 	if err != nil {
 		log.Fatal(err)
