@@ -171,7 +171,12 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 	} else {
 		// the others steps receives input from the WRF run
 		// of previous step.
-		previousStep := fsutil.PathF("wrf%02d", assimDate.Hour()-3)
+		prevHour := assimDate.Hour() - 3
+		if prevHour < 0 {
+			prevHour += 24
+		}
+
+		previousStep := fsutil.PathF("wrf%02d", prevHour)
 		fs.Copy(previousStep.JoinF("wrfvar_input_d%02d", domain), daDir.Join("fg"))
 	}
 
