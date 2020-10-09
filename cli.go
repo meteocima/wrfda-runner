@@ -283,9 +283,9 @@ func main() {
 	startDate := time.Date(2018, 8, 2, 0, 0, 0, 0, time.UTC)
 	endDate := time.Date(2018, 8, 4, 0, 0, 0, 0, time.UTC)
 
-	buildWPSDir(&fs, startDate, endDate)
-	runWPS(&fs, startDate, endDate)
-	for step := 1; step <= 3; step++ {
+	//buildWPSDir(&fs, startDate, endDate)
+	//runWPS(&fs, startDate, endDate)
+	for step := 3; step <= 3; step++ {
 
 		// execute real
 		buildNamelistForReal(&fs, startDate, endDate, step)
