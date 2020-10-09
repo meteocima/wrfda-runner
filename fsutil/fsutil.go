@@ -65,6 +65,7 @@ func (tr *Transaction) Copy(from, to Path) {
 	if tr.Err != nil {
 		return
 	}
+	fmt.Fprintf(os.Stderr, "copy from %s to %s\n", from, to)
 	source, err := os.Open(tr.Root.JoinP(from).String())
 	if err != nil {
 		tr.Err = err
@@ -101,6 +102,7 @@ func (tr *Transaction) Link(from, to Path) {
 	if tr.Err != nil {
 		return
 	}
+	fmt.Fprintf(os.Stderr, "link from %s to %s\n", from, to)
 	tr.Err = os.Symlink(
 		tr.Root.JoinP(from).String(),
 		tr.Root.JoinP(to).String(),
@@ -112,6 +114,7 @@ func (tr *Transaction) MkDir(dir Path) {
 	if tr.Err != nil {
 		return
 	}
+
 	tr.Err = os.MkdirAll(tr.Root.JoinP(dir).String(), os.FileMode(0755))
 }
 
@@ -136,7 +139,7 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 	if tr.Err != nil {
 		return
 	}
-
+	fmt.Fprintf(os.Stderr, "run %s\n", command)
 	cmd := exec.Command(command, args...)
 	cmd.Dir = tr.Root.JoinP(cwd).String()
 
