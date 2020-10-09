@@ -116,11 +116,9 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 
 	fs.MkDir(wrfDir)
 
-	// boundary from WPS
+	// boundary from same cycle da dir for domain 1
 
 	daBdy := fsutil.PathF("da%02d_d01/wrfbdy_d01", dtStart.Hour())
-
-	// from same cycle da dir for domain 1
 	fs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
 
 	// build namelist for wrf
@@ -301,7 +299,7 @@ func runWRFDA(rootPath string, startDate time.Time) error {
 
 	buildWPSDir(&fs, startDate, endDate)
 	runWPS(&fs, startDate, endDate)
-	for step := 3; step <= 3; step++ {
+	for step := 1; step <= 3; step++ {
 
 		// execute real
 		buildNamelistForReal(&fs, startDate, endDate, step)
