@@ -68,7 +68,7 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 	)
 
 	fs.Link(wpsPrg.Join("link_grib.csh"), wpsDir.Join("link_grib.csh"))
-	fs.Link(wpsPrg.Join("ungrib/ungrib.exe"), wpsDir.Join("ungrib.exe"))
+	fs.Link(wpsPrg.Join("ungrib.exe"), wpsDir.Join("ungrib.exe"))
 	fs.Link(wpsPrg.Join("metgrid.exe"), wpsDir.Join("metgrid.exe"))
 	fs.Link(wpsPrg.Join("util/avg_tsfc.exe"), wpsDir.Join("avg_tsfc.exe"))
 	fs.Link(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
