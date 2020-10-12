@@ -60,12 +60,18 @@ func (tr *Transaction) Exists(file Path) bool {
 	return err == nil
 }
 
+// Logf ...
+func Logf(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+}
+
 // Copy ...
 func (tr *Transaction) Copy(from, to Path) {
 	if tr.Err != nil {
 		return
 	}
-	fmt.Fprintf(os.Stderr, "copy from %s to %s\n", from, to)
+
+	Logf("\tCopy from %s to %s\n", from, to)
 	source, err := os.Open(tr.Root.JoinP(from).String())
 	if err != nil {
 		tr.Err = err
@@ -102,7 +108,7 @@ func (tr *Transaction) Link(from, to Path) {
 	if tr.Err != nil {
 		return
 	}
-	fmt.Fprintf(os.Stderr, "link from %s to %s\n", from, to)
+	Logf("\tLink from %s to %s\n", from, to)
 	tr.Err = os.Symlink(
 		tr.Root.JoinP(from).String(),
 		tr.Root.JoinP(to).String(),
@@ -123,6 +129,8 @@ func (tr *Transaction) RmDir(dir Path) {
 	if tr.Err != nil {
 		return
 	}
+	Logf("\tRmDir %s\n", dir)
+
 	tr.Err = os.RemoveAll(tr.Root.JoinP(dir).String())
 }
 
@@ -131,6 +139,7 @@ func (tr *Transaction) RmFile(file Path) {
 	if tr.Err != nil {
 		return
 	}
+	Logf("\tRmFile %s\n", file)
 	tr.Err = os.Remove(tr.Root.JoinP(file).String())
 }
 
@@ -139,7 +148,7 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 	if tr.Err != nil {
 		return
 	}
-	fmt.Fprintf(os.Stderr, "run %s %s\n", command, args)
+	Logf("\tRun %s %s\n", command, args)
 	cmd := exec.Command(command, args...)
 	cmd.Dir = tr.Root.JoinP(cwd).String()
 

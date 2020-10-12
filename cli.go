@@ -54,7 +54,6 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 	if fs.Err != nil {
 		return
 	}
-
 	fs.MkDir(wpsDir)
 
 	// build namelist for wrf
@@ -75,13 +74,15 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 	fs.Link(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
 	fs.Link(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
 	fs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
-
 }
 
 func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 	if fs.Err != nil {
 		return
 	}
+
+	fsutil.Logf("START WPS\n")
+
 	fmt.Println("running geogrid")
 	fs.Run(wpsDir, wpsDir.Join("geogrid.log.0000"), "mpirun", "-n", "84", "./geogrid.exe")
 	fmt.Println("running linkgrib ../gfs/*")
@@ -94,6 +95,9 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 	}
 	fmt.Println("running metgrid")
 	fs.Run(wpsDir, wpsDir.Join("metgrid.log.0000"), "mpirun", "-n", "84", "./metgrid.exe")
+
+	fsutil.Logf("COMPLETED WPS\n")
+
 }
 
 func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
@@ -229,16 +233,23 @@ func runWRFStep(fs *fsutil.Transaction, start time.Time, step int) {
 		return
 	}
 
+	fsutil.Logf("START WRF STEP %d\n", step)
+
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 	wrfDir := fsutil.PathF("wrf%02d", assimDate.Hour())
 
 	fs.Run(wrfDir, wrfDir.Join("rsl.out.0000"), "mpirun", "-n", "84", "./wrf.exe")
+
+	fsutil.Logf("COMPLETED WRF STEP %d\n", step)
 }
 
 func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int) {
 	if fs.Err != nil {
 		return
 	}
+
+	fsutil.Logf("START DA STEP %d in DOMAIN %d\n", step, domain)
+
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 	daDir := fsutil.PathF("da%02d_d%02d", assimDate.Hour(), domain)
 
@@ -247,6 +258,8 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 	if domain == 1 {
 		fs.Run(daDir, "", "./da_update_bc.exe")
 	}
+
+	fsutil.Logf("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
 }
 
 func buildDAStepDir(fs *fsutil.Transaction, start, end time.Time, step int) {
@@ -276,7 +289,10 @@ func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int
 }
 
 func runReal(fs *fsutil.Transaction) {
+	fsutil.Logf("START REAL\n")
+
 	fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", "36", "./real.exe")
+	fsutil.Logf("COMPLETED REAL\n")
 }
 
 func main() {
@@ -300,16 +316,12 @@ func runWRFDA(rootPath string, startDate time.Time) error {
 	buildWPSDir(&fs, startDate, endDate)
 	runWPS(&fs, startDate, endDate)
 	for step := 1; step <= 3; step++ {
-
-		// execute real
 		buildNamelistForReal(&fs, startDate, endDate, step)
 		runReal(&fs)
 
-		// first step of assimilation
 		buildDAStepDir(&fs, startDate, endDate, step)
 		runDAStep(&fs, startDate, step)
 
-		// three hours of WRF forecast
 		buildWRFDir(&fs, startDate, endDate, step)
 		runWRFStep(&fs, startDate, step)
 	}
