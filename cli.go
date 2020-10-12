@@ -74,6 +74,19 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 	fs.Link(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
 	fs.Link(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
 	fs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
+
+	fs.Link(wrfPrgStep.Join("run/RRTM_DATA"), wpsDir.Join("RRTM_DATA"))
+
+	fs.Link(wrfPrgStep.Join("run/RRTM_DATA_DBL"), wpsDir.Join("RRTM_DATA_DBL"))
+	fs.Link(wrfPrgStep.Join("run/RRTMG_LW_DATA"), wpsDir.Join("RRTMG_LW_DATA"))
+	fs.Link(wrfPrgStep.Join("run/RRTMG_LW_DATA_DBL"), wpsDir.Join("RRTMG_LW_DATA_DBL"))
+	fs.Link(wrfPrgStep.Join("run/RRTMG_SW_DATA"), wpsDir.Join("RRTMG_SW_DATA"))
+	fs.Link(wrfPrgStep.Join("run/RRTMG_SW_DATA_DBL"), wpsDir.Join("RRTMG_SW_DATA_DBL"))
+	fs.Link(wrfPrgStep.Join("run/URBPARM.TBL"), wpsDir.Join("URBPARM.TBL"))
+	fs.Link(wrfPrgStep.Join("run/URBPARM_UZE.TBL"), wpsDir.Join("URBPARM_UZE.TBL"))
+	fs.Link(wrfPrgStep.Join("run/VEGPARM.TBL"), wpsDir.Join("VEGPARM.TBL"))
+	fs.Link(wrfPrgStep.Join("run/SOILPARM.TBL"), wpsDir.Join("SOILPARM.TBL"))
+
 }
 
 func runWPS(fs *fsutil.Transaction, start, end time.Time) {
@@ -149,7 +162,6 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	fs.Link(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
 
 	// prev da results
-
 	daDir1 := fsutil.PathF("da%02d_d%02d", dtStart.Hour(), 1)
 	daDir2 := fsutil.PathF("da%02d_d%02d", dtStart.Hour(), 2)
 	daDir3 := fsutil.PathF("da%02d_d%02d", dtStart.Hour(), 3)
