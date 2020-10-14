@@ -75,17 +75,6 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 	fs.Link(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
 	fs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
 
-	//	fs.Link(wrfPrgStep.Join("run/RRTM_DATA"), wpsDir.Join("RRTM_DATA"))
-	//	fs.Link(wrfPrgStep.Join("run/RRTM_DATA_DBL"), wpsDir.Join("RRTM_DATA_DBL"))
-	//	fs.Link(wrfPrgStep.Join("run/RRTMG_LW_DATA"), wpsDir.Join("RRTMG_LW_DATA"))
-	//	fs.Link(wrfPrgStep.Join("run/RRTMG_LW_DATA_DBL"), wpsDir.Join("RRTMG_LW_DATA_DBL"))
-	//	fs.Link(wrfPrgStep.Join("run/RRTMG_SW_DATA"), wpsDir.Join("RRTMG_SW_DATA"))
-	//	fs.Link(wrfPrgStep.Join("run/RRTMG_SW_DATA_DBL"), wpsDir.Join("RRTMG_SW_DATA_DBL"))
-	//	fs.Link(wrfPrgStep.Join("run/URBPARM.TBL"), wpsDir.Join("URBPARM.TBL"))
-	//	fs.Link(wrfPrgStep.Join("run/URBPARM_UZE.TBL"), wpsDir.Join("URBPARM_UZE.TBL"))
-	//	fs.Link(wrfPrgStep.Join("run/VEGPARM.TBL"), wpsDir.Join("VEGPARM.TBL"))
-	//	fs.Link(wrfPrgStep.Join("run/SOILPARM.TBL"), wpsDir.Join("SOILPARM.TBL"))
-	//
 }
 
 func runWPS(fs *fsutil.Transaction, start, end time.Time) {
@@ -180,7 +169,9 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 
 	fs.MkDir(daDir)
 
-	fs.Copy(wpsDir.Join("wrfbdy_d01"), daDir.Join("wrfbdy_d01"))
+	if domain == 1 {
+		fs.Copy(wpsDir.Join("wrfbdy_d01"), daDir.Join("wrfbdy_d01"))
+	}
 
 	if step == 1 {
 		// first step of assimilation receives input from WPS
