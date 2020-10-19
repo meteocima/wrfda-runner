@@ -320,12 +320,12 @@ func main() {
 		}
 		buildWRFDAWorkdir(&fs, dt)
 		if fs.Err != nil {
-			log.Fatal(err)
+			log.Fatal(fs.Err)
 		}
 		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
 		runWRFDA(&fs, startDate)
 		if fs.Err != nil {
-			log.Fatal(err)
+			log.Fatal(fs.Err)
 		}
 
 		fsutil.Logf("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
