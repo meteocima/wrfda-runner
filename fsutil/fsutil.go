@@ -67,12 +67,17 @@ func Logf(format string, args ...interface{}) {
 
 // Copy ...
 func (tr *Transaction) Copy(from, to Path) {
+	tr.CopyAbs(tr.Root.JoinP(from), to)
+}
+
+// CopyAbs ...
+func (tr *Transaction) CopyAbs(from, to Path) {
 	if tr.Err != nil {
 		return
 	}
 
 	Logf("\tCopy from %s to %s\n", from, to)
-	source, err := os.Open(tr.Root.JoinP(from).String())
+	source, err := os.Open(from.String())
 	if err != nil {
 		tr.Err = err
 		return
@@ -111,6 +116,18 @@ func (tr *Transaction) Link(from, to Path) {
 	Logf("\tLink from %s to %s\n", from, to)
 	tr.Err = os.Symlink(
 		tr.Root.JoinP(from).String(),
+		tr.Root.JoinP(to).String(),
+	)
+}
+
+// LinkAbs ...
+func (tr *Transaction) LinkAbs(from, to Path) {
+	if tr.Err != nil {
+		return
+	}
+	Logf("\tLink from %s to %s\n", from, to)
+	tr.Err = os.Symlink(
+		from.String(),
 		tr.Root.JoinP(to).String(),
 	)
 }

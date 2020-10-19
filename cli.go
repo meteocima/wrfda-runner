@@ -298,36 +298,104 @@ func runReal(fs *fsutil.Transaction) {
 }
 
 func main() {
-
-	startDate := time.Date(2020, 7, 15, 12, 0, 0, 0, time.UTC)
-	err := runWRFDA(os.Args[1], startDate)
-	if err != nil {
-		log.Fatal(err)
+	if len(os.Args) != 4 {
+		log.Fatal("Usage: wrfassim <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH")
 	}
+
+	startDate, err := time.Parse("2006010215", os.Args[2])
+	if err != nil {
+		log.Fatal("Usage: wrfassim <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\n" + err.Error())
+	}
+	endDate, err := time.Parse("2006010215", os.Args[3])
+	if err != nil {
+		log.Fatal("Usage: wrfassim <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\n" + err.Error())
+	}
+	workdir := fsutil.Path(os.Args[1])
+
+	for dt := startDate; dt.Unix() < endDate.Unix(); dt = dt.Add(time.Hour * 24) {
+		fsutil.Logf("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
+		fs := fsutil.Transaction{Root: workdir}
+		if !fs.Exists(".") {
+			log.Fatalf("Directory not found: %s", workdir.String())
+		}
+		buildWRFDAWorkdir(&fs, dt)
+		if fs.Err != nil {
+			log.Fatal(err)
+		}
+		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
+		runWRFDA(&fs, startDate)
+		if fs.Err != nil {
+			log.Fatal(err)
+		}
+
+		fsutil.Logf("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
+	}
+
 }
 
-func runWRFDA(rootPath string, startDate time.Time) error {
-	rootDir := fsutil.Path(rootPath)
+func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
+	if fs.Err != nil {
+		return
+	}
+
+	workdir := fsutil.Path(startDate.Format("20060102"))
+
+	fs.MkDir(workdir)
+
+	fs.LinkAbs(fsutil.Path("/mnt/sky/geodata/"), workdir.Join("geodata"))
+	fs.LinkAbs(fsutil.Path("/mnt/sky"), workdir.Join("matrix"))
+	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WPS_smoothing36/"), workdir.Join("wpsprg"))
+	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRFDA/"), workdir.Join("wrfdaprg"))
+	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_noAVX/"), workdir.Join("wrfprgrun"))
+	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_oldRegistry/"), workdir.Join("wrfprgstep"))
+
+	observationDir := workdir.Join("observation")
+	gfsDir := workdir.Join("gfs")
+
+	fs.MkDir(gfsDir)
+	fs.MkDir(observationDir)
+
+	// GFS
+	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_oldRegistry/"), workdir.Join("wrfprgstep"))
+	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
+
+	gfsSources := fsutil.PathF("/rhomes/andrea.parodi/GFS_DA_DRIHM/%s", assimStartDate.Format("2006/01/02/1504"))
+	for filen := 0; filen < 55; filen += 3 {
+		filename := fmt.Sprintf("%s_f%03d_wrfIta2.5km.grb", assimStartDate.Format("2006010215"), filen)
+		gfsFile := gfsSources.Join(filename)
+		fs.CopyAbs(gfsFile, gfsDir.Join(filename))
+	}
+
+	// RADAR
+
+	cpRadar := func(dt time.Time) {
+		fs.CopyAbs(
+			fsutil.PathF("/rhomes/andrea.parodi/run-apicella/radars/ob.radar.%s", dt.Format("2006010215")),
+			observationDir.JoinF("ob.radar.%s", dt.Format("2006010215")),
+		)
+	}
+	cpRadar(assimStartDate)
+	cpRadar(assimStartDate.Add(3 * time.Hour))
+	cpRadar(assimStartDate.Add(6 * time.Hour))
+}
+
+func runWRFDA(fs *fsutil.Transaction, startDate time.Time) {
+	if fs.Err != nil {
+		return
+	}
+
 	endDate := startDate.Add(48 * time.Hour)
 
-	fs := fsutil.Transaction{Root: rootDir}
-	if !fs.Exists(".") {
-		log.Fatalf("Directory not found: %s", rootDir)
-	}
-
-	buildWPSDir(&fs, startDate, endDate)
-	runWPS(&fs, startDate, endDate)
+	buildWPSDir(fs, startDate, endDate)
+	runWPS(fs, startDate, endDate)
 	for step := 1; step <= 3; step++ {
-		buildNamelistForReal(&fs, startDate, endDate, step)
-		runReal(&fs)
+		buildNamelistForReal(fs, startDate, endDate, step)
+		runReal(fs)
 
-		buildDAStepDir(&fs, startDate, endDate, step)
-		runDAStep(&fs, startDate, step)
+		buildDAStepDir(fs, startDate, endDate, step)
+		runDAStep(fs, startDate, step)
 
-		buildWRFDir(&fs, startDate, endDate, step)
-		runWRFStep(&fs, startDate, step)
+		buildWRFDir(fs, startDate, endDate, step)
+		runWRFStep(fs, startDate, step)
 	}
-
-	return fs.Err
-
 }
