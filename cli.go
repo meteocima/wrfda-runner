@@ -349,7 +349,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_noAVX/"), workdir.Join("wrfprgrun"))
 	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_oldRegistry/"), workdir.Join("wrfprgstep"))
 
-	observationDir := workdir.Join("observation")
+	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
 
 	fs.MkDir(gfsDir)
