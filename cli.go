@@ -356,7 +356,6 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	fs.MkDir(observationDir)
 
 	// GFS
-	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_oldRegistry/"), workdir.Join("wrfprgstep"))
 	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
 
 	gfsSources := fsutil.PathF("/rhomes/andrea.parodi/GFS_DA_DRIHM/%s", assimStartDate.Format("2006/01/02/1504"))
