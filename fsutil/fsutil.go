@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -62,7 +63,7 @@ func (tr *Transaction) Exists(file Path) bool {
 
 // Logf ...
 func Logf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, format, args...)
+	log.Printf(format, args...)
 }
 
 // Copy ...
