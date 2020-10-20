@@ -312,7 +312,13 @@ func main() {
 	}
 	workdir := fsutil.Path(os.Args[1])
 
-	for dt := startDate; dt.Unix() < endDate.Unix(); dt = dt.Add(time.Hour * 24) {
+	fsutil.Logf(
+		"RUN FOR DATES FROM %s TO %s\n",
+		startDate.Format("2006010215"),
+		endDate.Format("2006010215"),
+	)
+
+	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
 		fsutil.Logf("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
 		fs := fsutil.Transaction{Root: workdir}
 		if !fs.Exists(".") {
