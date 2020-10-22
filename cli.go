@@ -329,7 +329,7 @@ func main() {
 			log.Fatal(fs.Err)
 		}
 		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
-		runWRFDA(&fs, startDate)
+		runWRFDA(&fs, dt)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
