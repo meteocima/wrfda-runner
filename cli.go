@@ -7,6 +7,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/meteocima/wrfassim/conf"
+
 	namelist "github.com/meteocima/namelist-prepare/namelist"
 	"github.com/meteocima/wrfassim/fsutil"
 )
@@ -312,6 +314,8 @@ func main() {
 	}
 	workdir := fsutil.Path(os.Args[1])
 
+	conf.Init(workdir.Join("wrfda-runner.cfg").String())
+
 	fsutil.Logf(
 		"RUN FOR DATES FROM %s TO %s\n",
 		startDate.Format("2006010215"),
@@ -344,16 +348,17 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 		return
 	}
 
+	folders := conf.Config.Folders
 	workdir := fsutil.Path(startDate.Format("20060102"))
 
 	fs.MkDir(workdir)
 
-	fs.LinkAbs(fsutil.Path("/mnt/sky/geodata/"), workdir.Join("geodata"))
-	fs.LinkAbs(fsutil.Path("/mnt/sky"), workdir.Join("matrix"))
-	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WPS_smoothing36/"), workdir.Join("wpsprg"))
-	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRFDA/"), workdir.Join("wrfdaprg"))
-	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_noAVX/"), workdir.Join("wrfprgrun"))
-	fs.LinkAbs(fsutil.Path("/mnt/sky/prg/WRF-3.8.1_oldRegistry/"), workdir.Join("wrfprgstep"))
+	fs.LinkAbs(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
+	fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
+	fs.LinkAbs(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
+	fs.LinkAbs(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
+	fs.LinkAbs(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
+	fs.LinkAbs(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
 
 	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
@@ -364,7 +369,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	// GFS
 	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
 
-	gfsSources := fsutil.PathF("/rhomes/andrea.parodi/GFS_DA_DRIHM/%s", assimStartDate.Format("2006/01/02/1504"))
+	gfsSources := folders.GFSArchive.JoinF("%s", assimStartDate.Format("2006/01/02/1504"))
 	for filen := 0; filen < 55; filen += 3 {
 		filename := fmt.Sprintf("%s_f%03d_wrfIta2.5km.grb", assimStartDate.Format("2006010215"), filen)
 		gfsFile := gfsSources.Join(filename)
@@ -375,7 +380,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 
 	cpRadar := func(dt time.Time) {
 		fs.CopyAbs(
-			fsutil.PathF("/rhomes/andrea.parodi/run-apicella/radars/ob.radar.%s", dt.Format("2006010215")),
+			folders.ObservationsArchive.JoinF("ob.radar.%s", dt.Format("2006010215")),
 			observationDir.JoinF("ob.radar.%s", dt.Format("2006010215")),
 		)
 	}
