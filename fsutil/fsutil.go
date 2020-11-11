@@ -114,7 +114,7 @@ func (tr *Transaction) Link(from, to Path) {
 	if tr.Err != nil {
 		return
 	}
-	Logf("\tLink from %s to %s\n", from, to)
+	Logf("\tLink from %s to %s (root %s)\n", tr.Root.JoinP(from).String(), tr.Root.JoinP(to).String(), tr.Root.String())
 	tr.Err = os.Symlink(
 		tr.Root.JoinP(from).String(),
 		tr.Root.JoinP(to).String(),
