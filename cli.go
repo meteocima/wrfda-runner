@@ -67,13 +67,13 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 		},
 	)
 
-	fs.Link(wpsPrg.Join("link_grib.csh"), wpsDir.Join("link_grib.csh"))
-	fs.Link(wpsPrg.Join("ungrib.exe"), wpsDir.Join("ungrib.exe"))
-	fs.Link(wpsPrg.Join("metgrid.exe"), wpsDir.Join("metgrid.exe"))
-	fs.Link(wpsPrg.Join("util/avg_tsfc.exe"), wpsDir.Join("avg_tsfc.exe"))
-	fs.Link(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
-	fs.Link(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
-	fs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
+	fs.LinkAbs(wpsPrg.Join("link_grib.csh"), wpsDir.Join("link_grib.csh"))
+	fs.LinkAbs(wpsPrg.Join("ungrib.exe"), wpsDir.Join("ungrib.exe"))
+	fs.LinkAbs(wpsPrg.Join("metgrid.exe"), wpsDir.Join("metgrid.exe"))
+	fs.LinkAbs(wpsPrg.Join("util/avg_tsfc.exe"), wpsDir.Join("avg_tsfc.exe"))
+	fs.LinkAbs(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
+	fs.LinkAbs(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
+	fs.LinkAbs(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
 
 }
 
@@ -138,16 +138,16 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	)
 
 	fs.Save(wrfDir.Join("wrf_var.txt"), []byte("\n"))
-	fs.Link(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
-	fs.Link(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
-	fs.Link(wrfPrg.Join("run/ozone_plev.formatted"), wrfDir.Join("ozone_plev.formatted"))
-	fs.Link(wrfPrg.Join("run/ozone_lat.formatted"), wrfDir.Join("ozone_lat.formatted"))
-	fs.Link(wrfPrg.Join("run/ozone.formatted"), wrfDir.Join("ozone.formatted"))
-	fs.Link(wrfPrg.Join("run/RRTMG_LW_DATA"), wrfDir.Join("RRTMG_LW_DATA"))
-	fs.Link(wrfPrg.Join("run/RRTMG_SW_DATA"), wrfDir.Join("RRTMG_SW_DATA"))
-	fs.Link(wrfPrg.Join("run/VEGPARM.TBL"), wrfDir.Join("VEGPARM.TBL"))
-	fs.Link(wrfPrg.Join("run/SOILPARM.TBL"), wrfDir.Join("SOILPARM.TBL"))
-	fs.Link(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
+	fs.LinkAbs(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
+	fs.LinkAbs(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
+	fs.LinkAbs(wrfPrg.Join("run/ozone_plev.formatted"), wrfDir.Join("ozone_plev.formatted"))
+	fs.LinkAbs(wrfPrg.Join("run/ozone_lat.formatted"), wrfDir.Join("ozone_lat.formatted"))
+	fs.LinkAbs(wrfPrg.Join("run/ozone.formatted"), wrfDir.Join("ozone.formatted"))
+	fs.LinkAbs(wrfPrg.Join("run/RRTMG_LW_DATA"), wrfDir.Join("RRTMG_LW_DATA"))
+	fs.LinkAbs(wrfPrg.Join("run/RRTMG_SW_DATA"), wrfDir.Join("RRTMG_SW_DATA"))
+	fs.LinkAbs(wrfPrg.Join("run/VEGPARM.TBL"), wrfDir.Join("VEGPARM.TBL"))
+	fs.LinkAbs(wrfPrg.Join("run/SOILPARM.TBL"), wrfDir.Join("SOILPARM.TBL"))
+	fs.LinkAbs(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
 
 	// prev da results
 	daDir1 := fsutil.PathF("da%02d_d%02d", dtStart.Hour(), 1)
@@ -210,10 +210,10 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 	)
 
 	// link files from WRFDA build directory
-	fs.Link(wrfdaPrg.Join("var/build/da_wrfvar.exe"), daDir.Join("da_wrfvar.exe"))
-	fs.Link(wrfdaPrg.Join("var/run/VARBC.in"), daDir.Join("VARBC.in"))
-	fs.Link(wrfdaPrg.Join("run/LANDUSE.TBL"), daDir.Join("LANDUSE.TBL"))
-	fs.Link(wrfdaPrg.Join("var/build/da_update_bc.exe"), daDir.Join("da_update_bc.exe"))
+	fs.LinkAbs(wrfdaPrg.Join("var/build/da_wrfvar.exe"), daDir.Join("da_wrfvar.exe"))
+	fs.LinkAbs(wrfdaPrg.Join("var/run/VARBC.in"), daDir.Join("VARBC.in"))
+	fs.LinkAbs(wrfdaPrg.Join("run/LANDUSE.TBL"), daDir.Join("LANDUSE.TBL"))
+	fs.LinkAbs(wrfdaPrg.Join("var/build/da_update_bc.exe"), daDir.Join("da_update_bc.exe"))
 
 	// link covariance matrixes
 	fs.Link(matrixDir.JoinF("summer/be_2.5km_d%02d", domain), daDir.Join("be.dat"))
