@@ -13,11 +13,12 @@ import (
 	"github.com/meteocima/wrfassim/fsutil"
 )
 
-var wrfdaPrg = fsutil.Path("../wrfdaprg")
-var wrfPrgStep = fsutil.Path("../wrfprgstep")
-var wrfPrgMainRun = fsutil.Path("../wrfprgrun")
-var wpsPrg = fsutil.Path("../wpsprg")
-var matrixDir = fsutil.Path("../matrix")
+var wrfdaPrg fsutil.Path
+var wrfPrgStep fsutil.Path
+var wrfPrgMainRun fsutil.Path
+var wpsPrg fsutil.Path
+var matrixDir fsutil.Path
+
 var wpsDir = fsutil.Path("wps")
 var observationsDir = fsutil.Path("observations")
 
@@ -313,6 +314,12 @@ func main() {
 
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
+	wrfdaPrg = conf.Config.Folders.WRFDAPrg
+	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
+	wrfPrgMainRun = conf.Config.Folders.WRFMainRunPrg
+	wpsPrg = conf.Config.Folders.WPSPrg
+	matrixDir = conf.Config.Folders.CovarMatrixesDir
+
 	fsutil.Logf(
 		"RUN FOR DATES FROM %s TO %s\n",
 		startDate.Format("2006010215"),
@@ -351,11 +358,11 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	fs.MkDir(workdir)
 
 	fs.LinkAbs(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
-	fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
-	fs.LinkAbs(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
-	fs.LinkAbs(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
-	fs.LinkAbs(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
-	fs.LinkAbs(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
+	//fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
+	//fs.LinkAbs(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
+	//fs.LinkAbs(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
+	//fs.LinkAbs(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
+	//fs.LinkAbs(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
 
 	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
