@@ -26,7 +26,7 @@ func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, a
 		return
 	}
 
-	tmplFile, err := os.Open(source)
+	tmplFile, err := os.Open(conf.Config.Folders.NamelistsDir.Join(source).String())
 	if err != nil {
 		log.Fatalf("open template: %s", err.Error())
 	}

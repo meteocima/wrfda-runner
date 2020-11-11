@@ -25,6 +25,7 @@ type FoldersConf struct {
 	WRFAssStepPrg       fsutil.Path
 	GFSArchive          fsutil.Path
 	ObservationsArchive fsutil.Path
+	NamelistsDir        fsutil.Path
 }
 
 // Configuration ...
