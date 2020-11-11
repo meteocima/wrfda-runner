@@ -13,11 +13,11 @@ import (
 	"github.com/meteocima/wrfassim/fsutil"
 )
 
-var wrfdaPrg = fsutil.Path("wrfdaprg")
-var wrfPrgStep = fsutil.Path("wrfprgstep")
-var wrfPrgMainRun = fsutil.Path("wrfprgrun")
-var wpsPrg = fsutil.Path("wpsprg")
-var matrixDir = fsutil.Path("matrix")
+var wrfdaPrg = fsutil.Path("../wrfdaprg")
+var wrfPrgStep = fsutil.Path("../wrfprgstep")
+var wrfPrgMainRun = fsutil.Path("../wrfprgrun")
+var wpsPrg = fsutil.Path("../wpsprg")
+var matrixDir = fsutil.Path("../matrix")
 var wpsDir = fsutil.Path("wps")
 var observationsDir = fsutil.Path("observations")
 
