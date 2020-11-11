@@ -21,15 +21,12 @@ var matrixDir = fsutil.Path("matrix")
 var wpsDir = fsutil.Path("wps")
 var observationsDir = fsutil.Path("observations")
 
-// Namelists ...
-var Namelists *FileSystem
-
 func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
 	if fs.Err != nil {
 		return
 	}
 
-	tmplFile, err := Namelists.Open("/" + source)
+	tmplFile, err := os.Open(source)
 	if err != nil {
 		log.Fatalf("open template: %s", err.Error())
 	}
