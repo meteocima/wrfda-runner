@@ -20,7 +20,7 @@ var wpsPrg fsutil.Path
 var matrixDir fsutil.Path
 
 var wpsDir = fsutil.Path("wps")
-var observationsDir = fsutil.Path("observations")
+var observationsDir = fsutil.Path("../observations")
 
 func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
 	if fs.Err != nil {
@@ -216,7 +216,7 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 	fs.LinkAbs(wrfdaPrg.Join("var/build/da_update_bc.exe"), daDir.Join("da_update_bc.exe"))
 
 	// link covariance matrixes
-	fs.Link(matrixDir.JoinF("summer/be_2.5km_d%02d", domain), daDir.Join("be.dat"))
+	fs.LinkAbs(matrixDir.JoinF("summer/be_2.5km_d%02d", domain), daDir.Join("be.dat"))
 
 	// link observations
 	assimDateS := assimDate.Format("2006010215")
