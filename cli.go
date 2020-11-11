@@ -220,8 +220,8 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 
 	// link observations
 	assimDateS := assimDate.Format("2006010215")
-	fs.Link(observationsDir.JoinF("ob.radar.%s", assimDateS), daDir.Join("ob.radar"))
-	fs.Link(observationsDir.JoinF("ob.ascii.%s.err", assimDateS), daDir.Join("ob.ascii"))
+	fs.LinkAbs(observationsDir.JoinF("ob.radar.%s", assimDateS), daDir.Join("ob.radar"))
+	fs.LinkAbs(observationsDir.JoinF("ob.ascii.%s.err", assimDateS), daDir.Join("ob.ascii"))
 }
 
 func runDAStep(fs *fsutil.Transaction, start time.Time, step int) {
