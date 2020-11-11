@@ -358,11 +358,11 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	fs.MkDir(workdir)
 
 	fs.LinkAbs(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
-	//fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
-	//fs.LinkAbs(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
-	//fs.LinkAbs(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
-	//fs.LinkAbs(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
-	//fs.LinkAbs(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
+	fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
+	fs.LinkAbs(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
+	fs.LinkAbs(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
+	fs.LinkAbs(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
+	fs.LinkAbs(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
 
 	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
