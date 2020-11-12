@@ -150,12 +150,12 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	fs.LinkAbs(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
 
 	// prev da results
-	daDir1 := fsutil.PathF("da%02d_d%02d", dtStart.Hour(), 1)
-	daDir2 := fsutil.PathF("da%02d_d%02d", dtStart.Hour(), 2)
-	daDir3 := fsutil.PathF("da%02d_d%02d", dtStart.Hour(), 3)
-	fs.Link(daDir1.Join("wrfvar_output"), wrfDir.Join("wrfinput_d01"))
-	fs.Link(daDir2.Join("wrfvar_output"), wrfDir.Join("wrfinput_d02"))
-	fs.Link(daDir3.Join("wrfvar_output"), wrfDir.Join("wrfinput_d03"))
+	daDir1 := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), 1)
+	daDir2 := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), 2)
+	daDir3 := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), 3)
+	fs.LinkAbs(daDir1.Join("wrfvar_output"), wrfDir.Join("wrfinput_d01"))
+	fs.LinkAbs(daDir2.Join("wrfvar_output"), wrfDir.Join("wrfinput_d02"))
+	fs.LinkAbs(daDir3.Join("wrfvar_output"), wrfDir.Join("wrfinput_d03"))
 }
 
 func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, domain int) {
