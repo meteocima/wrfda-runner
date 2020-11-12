@@ -20,7 +20,7 @@ var wpsPrg fsutil.Path
 var matrixDir fsutil.Path
 
 var wpsDir = fsutil.Path("wps")
-var inputsDir = fsutil.Path("inputs")
+var inputsDir = fsutil.Path("../inputs")
 var observationsDir = fsutil.Path("../observations")
 
 func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
