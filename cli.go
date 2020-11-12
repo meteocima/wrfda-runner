@@ -20,6 +20,7 @@ var wpsPrg fsutil.Path
 var matrixDir fsutil.Path
 
 var wpsDir = fsutil.Path("wps")
+var inputsDir = fsutil.Path("inputs")
 var observationsDir = fsutil.Path("../observations")
 
 func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
@@ -170,12 +171,12 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 	fs.MkDir(daDir)
 
 	if domain == 1 {
-		fs.Copy(wpsDir.Join("wrfbdy_d01"), daDir.Join("wrfbdy_d01"))
+		fs.Copy(inputsDir.JoinF("wrfbdy_d01_da%02d", step), daDir.Join("wrfbdy_d01"))
 	}
 
 	if step == 1 {
 		// first step of assimilation receives input from WPS
-		fs.Copy(wpsDir.JoinF("wrfinput_d%02d", domain), daDir.Join("fg"))
+		fs.Copy(inputsDir.JoinF("wrfinput_d%02d", domain), daDir.Join("fg"))
 	} else {
 		// the others steps receives input from the WRF run
 		// of previous step.
@@ -401,11 +402,11 @@ func runWRFDA(fs *fsutil.Transaction, startDate time.Time) {
 
 	endDate := startDate.Add(48 * time.Hour)
 
-	buildWPSDir(fs, startDate, endDate)
-	runWPS(fs, startDate, endDate)
+	//buildWPSDir(fs, startDate, endDate)
+	//runWPS(fs, startDate, endDate)
 	for step := 1; step <= 3; step++ {
-		buildNamelistForReal(fs, startDate, endDate, step)
-		runReal(fs)
+		//buildNamelistForReal(fs, startDate, endDate, step)
+		//runReal(fs)
 
 		buildDAStepDir(fs, startDate, endDate, step)
 		runDAStep(fs, startDate, step)
