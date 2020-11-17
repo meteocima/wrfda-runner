@@ -171,12 +171,12 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 	fs.MkDir(daDir)
 
 	if domain == 1 {
-		fs.Copy(inputsDir.JoinF("wrfbdy_d01_da%02d", step), daDir.Join("wrfbdy_d01"))
+		fs.Copy(inputsDir.Join(start.Format("20060201")).JoinF("wrfbdy_d01_da%02d", step), daDir.Join("wrfbdy_d01"))
 	}
 
 	if step == 1 {
 		// first step of assimilation receives input from WPS
-		fs.Copy(inputsDir.JoinF("wrfinput_d%02d", domain), daDir.Join("fg"))
+		fs.Copy(inputsDir.Join(start.Format("20060201")).JoinF("wrfinput_d%02d", domain), daDir.Join("fg"))
 	} else {
 		// the others steps receives input from the WRF run
 		// of previous step.
