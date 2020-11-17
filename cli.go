@@ -374,14 +374,16 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	// GFS
 	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
 
-	gfsSources := folders.GFSArchive.JoinF("%s", assimStartDate.Format("2006/01/02/1504"))
-	for filen := 0; filen < 55; filen += 3 {
-		filename := fmt.Sprintf("%s_f%03d_wrfIta2.5km.grb", assimStartDate.Format("2006010215"), filen)
-		//filename := fmt.Sprintf("%s_f%03d_daita.grb", assimStartDate.Format("2006010215"), filen)
-		gfsFile := gfsSources.Join(filename)
-		fs.CopyAbs(gfsFile, gfsDir.Join(filename))
-	}
+	/*
 
+		gfsSources := folders.GFSArchive.JoinF("%s", assimStartDate.Format("2006/01/02/1504"))
+		for filen := 0; filen < 55; filen += 3 {
+			filename := fmt.Sprintf("%s_f%03d_wrfIta2.5km.grb", assimStartDate.Format("2006010215"), filen)
+			//filename := fmt.Sprintf("%s_f%03d_daita.grb", assimStartDate.Format("2006010215"), filen)
+			gfsFile := gfsSources.Join(filename)
+			fs.CopyAbs(gfsFile, gfsDir.Join(filename))
+		}
+	*/
 	// RADAR
 
 	cpRadar := func(dt time.Time) {
