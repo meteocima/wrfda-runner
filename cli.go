@@ -176,6 +176,7 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 
 	if step == 1 {
 		// first step of assimilation receives input from WPS
+
 		fs.Copy(inputsDir.Join(start.Format("20060102")).JoinF("wrfinput_d%02d", domain), daDir.Join("fg"))
 	} else {
 		// the others steps receives input from the WRF run
@@ -383,7 +384,9 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 			gfsFile := gfsSources.Join(filename)
 			fs.CopyAbs(gfsFile, gfsDir.Join(filename))
 		}
+
 	*/
+
 	// RADAR
 
 	cpRadar := func(dt time.Time) {
