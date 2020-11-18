@@ -112,6 +112,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 
 	dtStart := start.Add(3 * time.Duration(step-3) * time.Hour)
 	dtEnd := dtStart.Add(3 * time.Hour)
+
 	if step == 3 {
 		dtEnd = end
 		wrfPrg = wrfPrgMainRun
@@ -138,7 +139,20 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 		},
 	)
 
-	fs.Save(wrfDir.Join("wrf_var.txt"), []byte("\n"))
+	wrfvar := ""
+	switch step {
+	case 1:
+		wrfvar = "wrf_var.txt.wrf_01"
+	case 2:
+		wrfvar = "wrf_var.txt.wrf_02"
+	case 3:
+		wrfvar = "wrf_var.txt.wrf_03"
+	}
+
+	wrfTarget := "wrf_var.txt"
+
+	fs.Copy(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
+
 	fs.LinkAbs(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
 	fs.LinkAbs(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
 	fs.LinkAbs(wrfPrg.Join("run/ozone_plev.formatted"), wrfDir.Join("ozone_plev.formatted"))
