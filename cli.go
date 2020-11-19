@@ -150,7 +150,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 
 	wrfTarget := "wrf_var.txt"
 
-	fs.Copy(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
+	fs.CopyAbs(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
 
 	fs.LinkAbs(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
 	fs.LinkAbs(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
