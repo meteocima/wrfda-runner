@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -173,7 +174,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	fs.LinkAbs(daDir3.Join("wrfvar_output"), wrfDir.Join("wrfinput_d03"))
 }
 
-func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, domain int) {
+func buildDADirInDomain(fs *fsutil.Transaction, mode inputsMode, start, end time.Time, step, domain int) {
 	if fs.Err != nil {
 		return
 	}
@@ -185,12 +186,12 @@ func buildDADirInDomain(fs *fsutil.Transaction, start, end time.Time, step, doma
 	fs.MkDir(daDir)
 
 	if domain == 1 {
+		// domain 1 in every step of assimilation receives boundaries from WPS or from 'inputs' directory.
 		fs.Copy(inputsDir.Join(start.Format("20060102")).JoinF("wrfbdy_d01_da%02d", step), daDir.Join("wrfbdy_d01"))
 	}
 
 	if step == 1 {
-		// first step of assimilation receives input from WPS
-
+		// first step of assimilation receives fg input from WPS or from 'inputs' directory.
 		fs.Copy(inputsDir.Join(start.Format("20060102")).JoinF("wrfinput_d%02d", domain), daDir.Join("fg"))
 	} else {
 		// the others steps receives input from the WRF run
@@ -280,15 +281,15 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 	fsutil.Logf("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
 }
 
-func buildDAStepDir(fs *fsutil.Transaction, start, end time.Time, step int) {
+func buildDAStepDir(fs *fsutil.Transaction, mode inputsMode, start, end time.Time, step int) {
 	//assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 
 	//dds.DownloadRadar(assimStartDate)
 	//radar.Convert(".", assimStartDate.Format("2006010214"))
 
-	buildDADirInDomain(fs, start, end, step, 1)
-	buildDADirInDomain(fs, start, end, step, 2)
-	buildDADirInDomain(fs, start, end, step, 3)
+	buildDADirInDomain(fs, mode, start, end, step, 1)
+	buildDADirInDomain(fs, mode, start, end, step, 2)
+	buildDADirInDomain(fs, mode, start, end, step, 3)
 }
 
 func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int) {
@@ -313,18 +314,36 @@ func runReal(fs *fsutil.Transaction) {
 	fsutil.Logf("COMPLETED REAL\n")
 }
 
+type inputsMode int
+
+const (
+	runWPSInputMode inputsMode = iota
+	fromDirectoriesInputMode
+)
+
 func main() {
+	usage := "Usage: wrfassim [-i WPS|DIR] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -i is WPS\n"
+
+	inputs := flag.String("i", "WPS", "")
+	flag.Parse()
+
+	mode := runWPSInputMode
+
+	if *inputs == "DIR" {
+		mode = fromDirectoriesInputMode
+	}
+
 	if len(os.Args) != 4 {
-		log.Fatal("Usage: wrfassim <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH")
+		log.Fatal(usage)
 	}
 
 	startDate, err := time.Parse("2006010215", os.Args[2])
 	if err != nil {
-		log.Fatal("Usage: wrfassim <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\n" + err.Error())
+		log.Fatal(usage + err.Error() + "\n")
 	}
 	endDate, err := time.Parse("2006010215", os.Args[3])
 	if err != nil {
-		log.Fatal("Usage: wrfassim <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\n" + err.Error())
+		log.Fatal(usage + err.Error() + "\n")
 	}
 	workdir := fsutil.Path(os.Args[1])
 
@@ -348,12 +367,12 @@ func main() {
 		if !fs.Exists(".") {
 			log.Fatalf("Directory not found: %s", workdir.String())
 		}
-		buildWRFDAWorkdir(&fs, dt)
+		buildWRFDAWorkdir(&fs, mode, dt)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
 		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
-		runWRFDA(&fs, dt)
+		runWRFDA(&fs, mode, dt)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
@@ -363,7 +382,7 @@ func main() {
 
 }
 
-func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
+func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
 	if fs.Err != nil {
 		return
 	}
@@ -389,7 +408,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	// GFS
 	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
 
-	/*
+	if mode == runWPSInputMode {
 
 		gfsSources := folders.GFSArchive.JoinF("%s", assimStartDate.Format("2006/01/02/1504"))
 		for filen := 0; filen < 55; filen += 3 {
@@ -398,8 +417,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 			gfsFile := gfsSources.Join(filename)
 			fs.CopyAbs(gfsFile, gfsDir.Join(filename))
 		}
-
-	*/
+	}
 
 	// RADAR
 
@@ -414,20 +432,25 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 	cpRadar(assimStartDate.Add(6 * time.Hour))
 }
 
-func runWRFDA(fs *fsutil.Transaction, startDate time.Time) {
+func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
 	if fs.Err != nil {
 		return
 	}
 
 	endDate := startDate.Add(48 * time.Hour)
 
-	//buildWPSDir(fs, startDate, endDate)
-	//runWPS(fs, startDate, endDate)
-	for step := 1; step <= 3; step++ {
-		//buildNamelistForReal(fs, startDate, endDate, step)
-		//runReal(fs)
+	if mode == runWPSInputMode {
+		buildWPSDir(fs, startDate, endDate)
+		runWPS(fs, startDate, endDate)
+	}
 
-		buildDAStepDir(fs, startDate, endDate, step)
+	for step := 1; step <= 3; step++ {
+		if mode == runWPSInputMode {
+			buildNamelistForReal(fs, startDate, endDate, step)
+			runReal(fs)
+		}
+
+		buildDAStepDir(fs, mode, startDate, endDate, step)
 		runDAStep(fs, startDate, step)
 
 		buildWRFDir(fs, startDate, endDate, step)
