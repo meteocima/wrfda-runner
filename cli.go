@@ -336,7 +336,7 @@ const (
 )
 
 func main() {
-	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -i is WPS\n"
+	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
 
 	inputs := flag.String("m", "WPSDA", "")
 	flag.Parse()
