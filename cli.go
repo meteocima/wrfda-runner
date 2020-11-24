@@ -152,7 +152,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 
 	wrfTarget := "wrf_var.txt"
 
-	fs.Copy(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
+	fs.CopyAbs(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
 
 	fs.LinkAbs(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
 	fs.LinkAbs(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
@@ -238,7 +238,7 @@ func buildDADirInDomain(fs *fsutil.Transaction, mode inputsMode, start, end time
 	// link observations
 	assimDateS := assimDate.Format("2006010215")
 	fs.LinkAbs(observationsDir.JoinF("ob.radar.%s", assimDateS), daDir.Join("ob.radar"))
-	fs.LinkAbs(observationsDir.JoinF("ob.ascii.%s.err", assimDateS), daDir.Join("ob.ascii"))
+	fs.LinkAbs(observationsDir.JoinF("ob.ascii.%s", assimDateS), daDir.Join("ob.ascii"))
 }
 
 func runDAStep(fs *fsutil.Transaction, start time.Time, step int) {
@@ -419,17 +419,23 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.T
 		}
 	}
 
-	// RADAR
+	// Obervations
 
-	cpRadar := func(dt time.Time) {
+	cpObervations := func(dt time.Time) {
 		fs.CopyAbs(
 			folders.ObservationsArchive.JoinF("ob.radar.%s", dt.Format("2006010215")),
 			observationDir.JoinF("ob.radar.%s", dt.Format("2006010215")),
 		)
+
+		fs.CopyAbs(
+			folders.ObservationsArchive.JoinF("ob.ascii.%s", dt.Format("2006010215")),
+			observationDir.JoinF("ob.ascii.%s", dt.Format("2006010215")),
+		)
 	}
-	cpRadar(assimStartDate)
-	cpRadar(assimStartDate.Add(3 * time.Hour))
-	cpRadar(assimStartDate.Add(6 * time.Hour))
+	cpObervations(assimStartDate)
+	cpObervations(assimStartDate.Add(3 * time.Hour))
+	cpObervations(assimStartDate.Add(6 * time.Hour))
+
 }
 
 func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
