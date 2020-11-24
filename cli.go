@@ -307,30 +307,50 @@ func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int
 	)
 }
 
-func runReal(fs *fsutil.Transaction) {
+func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
 	fsutil.Logf("START REAL\n")
 
 	fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", "36", "./real.exe")
+
+	fs.Copy(wpsDir.JoinF("wrfbdy_d01"), inputsDir.Join(startDate.Format("20060102")).JoinF("wrfbdy_d01_da%02d", step))
+
+	if step == 1 {
+		fs.Copy(wpsDir.Join("wrfinput_d01"), inputsDir.Join(startDate.Format("20060102")).Join("wrfinput_d01"))
+		fs.Copy(wpsDir.Join("wrfinput_d02"), inputsDir.Join(startDate.Format("20060102")).Join("wrfinput_d02"))
+		fs.Copy(wpsDir.Join("wrfinput_d03"), inputsDir.Join(startDate.Format("20060102")).Join("wrfinput_d03"))
+	}
+
 	fsutil.Logf("COMPLETED REAL\n")
+
 }
 
 type inputsMode int
 
 const (
-	runWPSInputMode inputsMode = iota
-	fromDirectoriesInputMode
+	// WPSMode - run only WPS
+	WPSMode inputsMode = iota
+	// DAMode - run only DA
+	DAMode
+	// WPSDAMode - run WPS followed by DA
+	WPSDAMode
 )
 
 func main() {
-	usage := "Usage: wrfassim [-i WPS|DIR] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -i is WPS\n"
+	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -i is WPS\n"
 
-	inputs := flag.String("i", "WPS", "")
+	inputs := flag.String("m", "WPSDA", "")
 	flag.Parse()
 
-	mode := runWPSInputMode
+	var mode inputsMode
 
-	if *inputs == "DIR" {
-		mode = fromDirectoriesInputMode
+	if *inputs == "WPS" {
+		mode = WPSMode
+	} else if *inputs == "DA" {
+		mode = DAMode
+	} else if *inputs == "WPSDA" {
+		mode = WPSDAMode
+	} else {
+		log.Fatalf("%s\nUnknown mode `%s`", usage, *inputs)
 	}
 
 	if len(os.Args) != 4 {
@@ -405,10 +425,10 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.T
 	fs.MkDir(gfsDir)
 	fs.MkDir(observationDir)
 
-	// GFS
 	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
 
-	if mode == runWPSInputMode {
+	if mode == WPSMode || mode == WPSDAMode {
+		// GFS
 
 		gfsSources := folders.GFSArchive.JoinF("%s", assimStartDate.Format("2006/01/02/1504"))
 		for filen := 0; filen < 55; filen += 3 {
@@ -419,7 +439,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.T
 		}
 	}
 
-	// Obervations
+	// Observations - weather stations and radars
 
 	cpObervations := func(dt time.Time) {
 		fs.CopyAbs(
@@ -445,21 +465,22 @@ func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
 
 	endDate := startDate.Add(48 * time.Hour)
 
-	if mode == runWPSInputMode {
+	if mode == WPSMode || mode == WPSDAMode {
 		buildWPSDir(fs, startDate, endDate)
 		runWPS(fs, startDate, endDate)
+		for step := 1; step <= 3; step++ {
+			buildNamelistForReal(fs, startDate, endDate, step)
+			runReal(fs, startDate, step)
+		}
 	}
 
-	for step := 1; step <= 3; step++ {
-		if mode == runWPSInputMode {
-			buildNamelistForReal(fs, startDate, endDate, step)
-			runReal(fs)
+	if mode == DAMode || mode == WPSDAMode {
+		for step := 1; step <= 3; step++ {
+			buildDAStepDir(fs, mode, startDate, endDate, step)
+			runDAStep(fs, startDate, step)
+
+			buildWRFDir(fs, startDate, endDate, step)
+			runWRFStep(fs, startDate, step)
 		}
-
-		buildDAStepDir(fs, mode, startDate, endDate, step)
-		runDAStep(fs, startDate, step)
-
-		buildWRFDir(fs, startDate, endDate, step)
-		runWRFStep(fs, startDate, step)
 	}
 }
