@@ -395,17 +395,23 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, startDate time.Time) {
 		fs.CopyAbs(gfsFile, gfsDir.Join(filename))
 	}
 
-	// RADAR
+	// Obervations
 
-	cpRadar := func(dt time.Time) {
+	cpObervations := func(dt time.Time) {
 		fs.CopyAbs(
 			folders.ObservationsArchive.JoinF("ob.radar.%s", dt.Format("2006010215")),
 			observationDir.JoinF("ob.radar.%s", dt.Format("2006010215")),
 		)
+
+		fs.CopyAbs(
+			folders.ObservationsArchive.JoinF("ob.ascii.%s", dt.Format("2006010215")),
+			observationDir.JoinF("ob.ascii.%s", dt.Format("2006010215")),
+		)
 	}
-	cpRadar(assimStartDate)
-	cpRadar(assimStartDate.Add(3 * time.Hour))
-	cpRadar(assimStartDate.Add(6 * time.Hour))
+	cpObervations(assimStartDate)
+	cpObervations(assimStartDate.Add(3 * time.Hour))
+	cpObervations(assimStartDate.Add(6 * time.Hour))
+
 }
 
 func runWRFDA(fs *fsutil.Transaction, startDate time.Time) {
