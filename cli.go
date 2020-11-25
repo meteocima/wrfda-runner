@@ -24,17 +24,17 @@ var wpsDir = fsutil.Path("wps")
 var inputsDir = fsutil.Path("../inputs")
 var observationsDir = fsutil.Path("../observations")
 
-//var geogridProcCount = "84"
-//var metgridProcCount = "84"
-//var wrfstepProcCount = "84"
-//var wrfdaProcCount = "50"
-//var realProcCount = "36"
+var geogridProcCount = "84"
+var metgridProcCount = "84"
+var wrfstepProcCount = "84"
+var wrfdaProcCount = "50"
+var realProcCount = "36"
 
-var geogridProcCount = "4"
-var metgridProcCount = "4"
-var wrfstepProcCount = "4"
-var wrfdaProcCount = "4"
-var realProcCount = "4"
+//var geogridProcCount = "4"
+//var metgridProcCount = "4"
+//var wrfstepProcCount = "4"
+//var wrfdaProcCount = "4"
+//var realProcCount = "4"
 
 func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
 	if fs.Err != nil {
