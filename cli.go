@@ -24,6 +24,17 @@ var wpsDir = fsutil.Path("wps")
 var inputsDir = fsutil.Path("../inputs")
 var observationsDir = fsutil.Path("../observations")
 
+// var geogridProcCount = "84"
+// var metgridProcCount = "84"
+// var wrfstepProcCount = "84"
+// var wrfdaProcCount = "50"
+// var realProcCount = "36"
+var geogridProcCount = "84"
+var metgridProcCount = "84"
+var wrfstepProcCount = "84"
+var wrfdaProcCount = "50"
+var realProcCount = "36"
+
 func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
 	if fs.Err != nil {
 		return
@@ -87,7 +98,7 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 	fsutil.Logf("START WPS\n")
 
 	fmt.Println("running geogrid")
-	fs.Run(wpsDir, wpsDir.Join("geogrid.log.0000"), "mpirun", "-n", "84", "./geogrid.exe")
+	fs.Run(wpsDir, wpsDir.Join("geogrid.log.0000"), "mpirun", "-n", geogridProcCount, "./geogrid.exe")
 	fmt.Println("running linkgrib ../gfs/*")
 	fs.Run(wpsDir, "", "./link_grib.csh", "../gfs/*")
 	fmt.Println("running ungrib")
@@ -97,7 +108,7 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 		fs.Run(wpsDir, "", "./avg_tsfc.exe")
 	}
 	fmt.Println("running metgrid")
-	fs.Run(wpsDir, wpsDir.Join("metgrid.log.0000"), "mpirun", "-n", "84", "./metgrid.exe")
+	fs.Run(wpsDir, wpsDir.Join("metgrid.log.0000"), "mpirun", "-n", metgridProcCount, "./metgrid.exe")
 
 	fsutil.Logf("COMPLETED WPS\n")
 
@@ -257,7 +268,7 @@ func runWRFStep(fs *fsutil.Transaction, start time.Time, step int) {
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 	wrfDir := fsutil.PathF("wrf%02d", assimDate.Hour())
 
-	fs.Run(wrfDir, wrfDir.Join("rsl.out.0000"), "mpirun", "-n", "84", "./wrf.exe")
+	fs.Run(wrfDir, wrfDir.Join("rsl.out.0000"), "mpirun", "-n", wrfstepProcCount, "./wrf.exe")
 
 	fsutil.Logf("COMPLETED WRF STEP %d\n", step)
 }
@@ -272,7 +283,7 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 	daDir := fsutil.PathF("da%02d_d%02d", assimDate.Hour(), domain)
 
-	fs.Run(daDir, daDir.Join("rsl.out.0000"), "mpirun", "-n", "50", "./da_wrfvar.exe")
+	fs.Run(daDir, daDir.Join("rsl.out.0000"), "mpirun", "-n", wrfdaProcCount, "./da_wrfvar.exe")
 
 	if domain == 1 {
 		fs.Run(daDir, "", "./da_update_bc.exe")
@@ -310,7 +321,7 @@ func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int
 func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
 	fsutil.Logf("START REAL\n")
 
-	fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", "36", "./real.exe")
+	fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", realProcCount, "./real.exe")
 
 	fs.Copy(wpsDir.JoinF("wrfbdy_d01"), inputsDir.Join(startDate.Format("20060102")).JoinF("wrfbdy_d01_da%02d", step))
 
@@ -321,84 +332,6 @@ func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
 	}
 
 	fsutil.Logf("COMPLETED REAL\n")
-
-}
-
-type inputsMode int
-
-const (
-	// WPSMode - run only WPS
-	WPSMode inputsMode = iota
-	// DAMode - run only DA
-	DAMode
-	// WPSDAMode - run WPS followed by DA
-	WPSDAMode
-)
-
-func main() {
-	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
-
-	inputs := flag.String("m", "WPSDA", "")
-	flag.Parse()
-
-	var mode inputsMode
-
-	if *inputs == "WPS" {
-		mode = WPSMode
-	} else if *inputs == "DA" {
-		mode = DAMode
-	} else if *inputs == "WPSDA" {
-		mode = WPSDAMode
-	} else {
-		log.Fatalf("%s\nUnknown mode `%s`", usage, *inputs)
-	}
-
-	if len(os.Args) != 4 {
-		log.Fatal(usage)
-	}
-
-	startDate, err := time.Parse("2006010215", os.Args[2])
-	if err != nil {
-		log.Fatal(usage + err.Error() + "\n")
-	}
-	endDate, err := time.Parse("2006010215", os.Args[3])
-	if err != nil {
-		log.Fatal(usage + err.Error() + "\n")
-	}
-	workdir := fsutil.Path(os.Args[1])
-
-	conf.Init(workdir.Join("wrfda-runner.cfg").String())
-
-	wrfdaPrg = conf.Config.Folders.WRFDAPrg
-	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
-	wrfPrgMainRun = conf.Config.Folders.WRFMainRunPrg
-	wpsPrg = conf.Config.Folders.WPSPrg
-	matrixDir = conf.Config.Folders.CovarMatrixesDir
-
-	fsutil.Logf(
-		"RUN FOR DATES FROM %s TO %s\n",
-		startDate.Format("2006010215"),
-		endDate.Format("2006010215"),
-	)
-
-	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
-		fsutil.Logf("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
-		fs := fsutil.Transaction{Root: workdir}
-		if !fs.Exists(".") {
-			log.Fatalf("Directory not found: %s", workdir.String())
-		}
-		buildWRFDAWorkdir(&fs, mode, dt)
-		if fs.Err != nil {
-			log.Fatal(fs.Err)
-		}
-		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
-		runWRFDA(&fs, mode, dt)
-		if fs.Err != nil {
-			log.Fatal(fs.Err)
-		}
-
-		fsutil.Logf("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
-	}
 
 }
 
@@ -483,4 +416,83 @@ func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
 			runWRFStep(fs, startDate, step)
 		}
 	}
+}
+
+type inputsMode int
+
+const (
+	// WPSMode - run only WPS
+	WPSMode inputsMode = iota
+	// DAMode - run only DA
+	DAMode
+	// WPSDAMode - run WPS followed by DA
+	WPSDAMode
+)
+
+func main() {
+	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
+
+	inputs := flag.String("m", "WPSDA", "")
+	flag.Parse()
+
+	var mode inputsMode
+
+	if *inputs == "WPS" {
+		mode = WPSMode
+	} else if *inputs == "DA" {
+		mode = DAMode
+	} else if *inputs == "WPSDA" {
+		mode = WPSDAMode
+	} else {
+		log.Fatalf("%s\nUnknown mode `%s`", usage, *inputs)
+	}
+
+	args := flag.Args()
+	if len(args) != 3 {
+		log.Fatal(usage)
+	}
+
+	startDate, err := time.Parse("2006010215", args[1])
+	if err != nil {
+		log.Fatal(usage + err.Error() + "\n")
+	}
+	endDate, err := time.Parse("2006010215", args[2])
+	if err != nil {
+		log.Fatal(usage + err.Error() + "\n")
+	}
+	workdir := fsutil.Path(args[0])
+
+	conf.Init(workdir.Join("wrfda-runner.cfg").String())
+
+	wrfdaPrg = conf.Config.Folders.WRFDAPrg
+	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
+	wrfPrgMainRun = conf.Config.Folders.WRFMainRunPrg
+	wpsPrg = conf.Config.Folders.WPSPrg
+	matrixDir = conf.Config.Folders.CovarMatrixesDir
+
+	fsutil.Logf(
+		"RUN FOR DATES FROM %s TO %s\n",
+		startDate.Format("2006010215"),
+		endDate.Format("2006010215"),
+	)
+
+	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
+		fsutil.Logf("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
+		fs := fsutil.Transaction{Root: workdir}
+		if !fs.Exists(".") {
+			log.Fatalf("Directory not found: %s", workdir.String())
+		}
+		buildWRFDAWorkdir(&fs, mode, dt)
+		if fs.Err != nil {
+			log.Fatal(fs.Err)
+		}
+		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
+		runWRFDA(&fs, mode, dt)
+		if fs.Err != nil {
+			log.Fatal(fs.Err)
+		}
+
+		fsutil.Logf("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
+	}
+
 }
