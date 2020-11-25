@@ -326,9 +326,11 @@ func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
 	fs.Copy(wpsDir.JoinF("wrfbdy_d01"), inputsDir.Join(startDate.Format("20060102")).JoinF("wrfbdy_d01_da%02d", step))
 
 	if step == 1 {
-		fs.Copy(wpsDir.Join("wrfinput_d01"), inputsDir.Join(startDate.Format("20060102")).Join("wrfinput_d01"))
-		fs.Copy(wpsDir.Join("wrfinput_d02"), inputsDir.Join(startDate.Format("20060102")).Join("wrfinput_d02"))
-		fs.Copy(wpsDir.Join("wrfinput_d03"), inputsDir.Join(startDate.Format("20060102")).Join("wrfinput_d03"))
+		indir := inputsDir.Join(startDate.Format("20060102"))
+		fs.MkDir(indir)
+		fs.Copy(wpsDir.Join("wrfinput_d01"), indir.Join("wrfinput_d01"))
+		fs.Copy(wpsDir.Join("wrfinput_d02"), indir.Join("wrfinput_d02"))
+		fs.Copy(wpsDir.Join("wrfinput_d03"), indir.Join("wrfinput_d03"))
 	}
 
 	fsutil.Logf("COMPLETED REAL\n")
