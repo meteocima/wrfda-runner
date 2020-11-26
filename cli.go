@@ -378,21 +378,22 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.T
 
 	// Observations - weather stations and radars
 
-	cpObervations := func(dt time.Time) {
-		fs.CopyAbs(
-			folders.ObservationsArchive.JoinF("ob.radar.%s", dt.Format("2006010215")),
-			observationDir.JoinF("ob.radar.%s", dt.Format("2006010215")),
-		)
+	if mode == DAMode || mode == WPSDAMode {
+		cpObervations := func(dt time.Time) {
+			fs.CopyAbs(
+				folders.ObservationsArchive.JoinF("ob.radar.%s", dt.Format("2006010215")),
+				observationDir.JoinF("ob.radar.%s", dt.Format("2006010215")),
+			)
 
-		fs.CopyAbs(
-			folders.ObservationsArchive.JoinF("ob.ascii.%s", dt.Format("2006010215")),
-			observationDir.JoinF("ob.ascii.%s", dt.Format("2006010215")),
-		)
+			fs.CopyAbs(
+				folders.ObservationsArchive.JoinF("ob.ascii.%s", dt.Format("2006010215")),
+				observationDir.JoinF("ob.ascii.%s", dt.Format("2006010215")),
+			)
+		}
+		cpObervations(assimStartDate)
+		cpObervations(assimStartDate.Add(3 * time.Hour))
+		cpObervations(assimStartDate.Add(6 * time.Hour))
 	}
-	cpObervations(assimStartDate)
-	cpObervations(assimStartDate.Add(3 * time.Hour))
-	cpObervations(assimStartDate.Add(6 * time.Hour))
-
 }
 
 func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
