@@ -294,11 +294,6 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 }
 
 func buildDAStepDir(fs *fsutil.Transaction, mode inputsMode, start, end time.Time, step int) {
-	//assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-
-	//dds.DownloadRadar(assimStartDate)
-	//radar.Convert(".", assimStartDate.Format("2006010214"))
-
 	buildDADirInDomain(fs, mode, start, end, step, 1)
 	buildDADirInDomain(fs, mode, start, end, step, 2)
 	buildDADirInDomain(fs, mode, start, end, step, 3)
