@@ -61,12 +61,12 @@ func (tr *Transaction) Exists(file Path) bool {
 	return err == nil
 }
 
-// Readdir ...
-func (tr *Transaction) Readdir(file Path) []string {
+// ReaddirAbs ...
+func (tr *Transaction) ReaddirAbs(dir Path) []string {
 	if tr.Err != nil {
 		return nil
 	}
-	dirfd, err := os.Open(tr.Root.JoinP(file).String())
+	dirfd, err := os.Open(dir.String())
 	if err != nil {
 		tr.Err = err
 		return nil
@@ -79,6 +79,12 @@ func (tr *Transaction) Readdir(file Path) []string {
 		tr.Err = err
 	}
 	return res
+}
+
+
+// Readdir ...
+func (tr *Transaction) Readdir(dir Path) []string {
+	return tr.ReaddirAbs(tr.Root.JoinP(dir))
 }
 
 // Logf ...

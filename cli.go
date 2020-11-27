@@ -361,8 +361,8 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.T
 
 	if mode == WPSMode || mode == WPSDAMode {
 		// GFS
-		gfsSources := folders.GFSArchive.JoinF("%s", assimStartDate.Format("2006/01/02/1504"))
-		for _, filename := range fs.Readdir(gfsSources) {
+		gfsSources := folders.GFSArchive.Join(assimStartDate.Format("2006/01/02/1504"))
+		for _, filename := range fs.ReaddirAbs(gfsSources) {
 			gfsFile := gfsSources.Join(filename)
 			fs.CopyAbs(gfsFile, gfsDir.Join(filename))
 		}
