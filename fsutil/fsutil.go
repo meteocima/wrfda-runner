@@ -61,6 +61,26 @@ func (tr *Transaction) Exists(file Path) bool {
 	return err == nil
 }
 
+// Readdir ...
+func (tr *Transaction) Readdir(file Path) []string {
+	if tr.Err != nil {
+		return nil
+	}
+	dirfd, err := os.Open(tr.Root.JoinP(file).String())
+	if err != nil {
+		tr.Err = err
+		return nil
+	}
+
+	defer dirfd.Close()
+
+	res, err := dirfd.Readdirnames(0)
+	if !os.IsNotExist(err) {
+		tr.Err = err
+	}
+	return res
+}
+
 // Logf ...
 func Logf(format string, args ...interface{}) {
 	log.Printf(format, args...)
