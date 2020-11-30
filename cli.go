@@ -444,9 +444,8 @@ func main() {
 	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
 
 	modeF := flag.String("m", "WPSDA", "")
-	flag.Parse()
-
 	inputF := flag.String("i", "GFS", "")
+
 	flag.Parse()
 
 	var mode inputsMode
