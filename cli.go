@@ -64,7 +64,8 @@ func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, a
 	tmpl.RenderTo(args, targetNamelistFile)
 }
 
-func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
+
+func buildWPSDir(fs *fsutil.Transaction, start, end time.Time, ds inputDataset) {
 	if fs.Err != nil {
 		return
 	}
@@ -87,8 +88,13 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time) {
 	fs.LinkAbs(wpsPrg.Join("util/avg_tsfc.exe"), wpsDir.Join("avg_tsfc.exe"))
 	fs.LinkAbs(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
 	fs.LinkAbs(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
-	fs.LinkAbs(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
 
+	if ds == GFS {
+		fs.LinkAbs(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
+	} else if ds == IFS {
+		fs.LinkAbs(wpsPrg.Join("ungrib/Variable_Tables/Vtable.ECMWF"), wpsDir.Join("Vtable"))
+	}
+	
 }
 
 func runWPS(fs *fsutil.Transaction, start, end time.Time) {
@@ -388,7 +394,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.T
 	}
 }
 
-func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
+func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time, ds inputDataset) {
 	if fs.Err != nil {
 		return
 	}
@@ -396,7 +402,7 @@ func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
 	endDate := startDate.Add(48 * time.Hour)
 
 	if mode == WPSMode || mode == WPSDAMode {
-		buildWPSDir(fs, startDate, endDate)
+		buildWPSDir(fs, startDate, endDate, ds)
 		runWPS(fs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
 			buildNamelistForReal(fs, startDate, endDate, step)
@@ -426,22 +432,42 @@ const (
 	WPSDAMode
 )
 
-func main() {
-	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
 
-	inputs := flag.String("m", "WPSDA", "")
+type inputDataset int
+
+const (
+	GFS inputDataset = iota
+	IFS
+)
+
+func main() {
+	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
+
+	modeF := flag.String("m", "WPSDA", "")
+	flag.Parse()
+
+	inputF := flag.String("i", "GFS", "")
 	flag.Parse()
 
 	var mode inputsMode
+	var input inputDataset
 
-	if *inputs == "WPS" {
+	if *modeF == "WPS" {
 		mode = WPSMode
-	} else if *inputs == "DA" {
+	} else if *modeF == "DA" {
 		mode = DAMode
-	} else if *inputs == "WPSDA" {
+	} else if *modeF == "WPSDA" {
 		mode = WPSDAMode
 	} else {
-		log.Fatalf("%s\nUnknown mode `%s`", usage, *inputs)
+		log.Fatalf("%s\nUnknown mode `%s`", usage, *modeF)
+	}
+
+	if *inputF == "GFS" {
+		input = GFS
+	} else if *inputF == "IFS" {
+		input = IFS
+	} else {
+		log.Fatalf("%s\nUnknown input dataset `%s`", usage, *modeF)
 	}
 
 	args := flag.Args()
@@ -484,7 +510,7 @@ func main() {
 			log.Fatal(fs.Err)
 		}
 		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
-		runWRFDA(&fs, mode, dt)
+		runWRFDA(&fs, mode, dt, input)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
