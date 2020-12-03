@@ -418,8 +418,8 @@ func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inpu
 	endDate := startDate.Add(42 * time.Hour)
 
 	if mode == WPSMode || mode == WPSDAMode {
-		//buildWPSDir(fs, startDate, endDate, ds)
-		//runWPS(fs, startDate, endDate)
+		buildWPSDir(fs, startDate, endDate, ds)
+		runWPS(fs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
 			buildNamelistForReal(fs, startDate, endDate, step)
 			runReal(fs, startDate, step, domainCount)
