@@ -336,7 +336,7 @@ func runReal(fs *fsutil.Transaction, startDate time.Time, step int, domainCount 
 
 	fsutil.Logf("START REAL\n")
 
-	//fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", realProcCount, "./real.exe")
+	fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", realProcCount, "./real.exe")
 
 	indir := inputsDir.Join(startDate.Format("20060102"))
 	fs.MkDir(indir)
