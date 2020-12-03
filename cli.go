@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 	"time"
-
+	"ioutil"
 	"github.com/meteocima/wrfassim/conf"
 
 	namelist "github.com/meteocima/namelist-prepare/namelist"
@@ -192,7 +192,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	fs.LinkAbs(daDir3.Join("wrfvar_output"), wrfDir.Join("wrfinput_d03"))
 }
 
-func buildDADirInDomain(fs *fsutil.Transaction, mode inputsMode, start, end time.Time, step, domain int) {
+func buildDADirInDomain(fs *fsutil.Transaction, mode runMode, start, end time.Time, step, domain int) {
 	if fs.Err != nil {
 		return
 	}
@@ -299,7 +299,7 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 	fsutil.Logf("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
 }
 
-func buildDAStepDir(fs *fsutil.Transaction, mode inputsMode, start, end time.Time, step int) {
+func buildDAStepDir(fs *fsutil.Transaction, mode runMode, start, end time.Time, step int) {
 	buildDADirInDomain(fs, mode, start, end, step, 1)
 	buildDADirInDomain(fs, mode, start, end, step, 2)
 	buildDADirInDomain(fs, mode, start, end, step, 3)
@@ -323,7 +323,7 @@ func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int
 func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
 	fsutil.Logf("START REAL\n")
 
-	fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", realProcCount, "./real.exe")
+	//fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", realProcCount, "./real.exe")
 
 	indir := inputsDir.Join(startDate.Format("20060102"))
 	fs.MkDir(indir)
@@ -335,12 +335,12 @@ func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
 		fs.Copy(wpsDir.Join("wrfinput_d02"), indir.Join("wrfinput_d02"))
 		fs.Copy(wpsDir.Join("wrfinput_d03"), indir.Join("wrfinput_d03"))
 	}
-
+	fmt.Println(fs.Err)
 	fsutil.Logf("COMPLETED REAL\n")
 
 }
 
-func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.Time) {
+func buildWRFDAWorkdir(fs *fsutil.Transaction, mode runMode, startDate time.Time) {
 	if fs.Err != nil {
 		return
 	}
@@ -394,16 +394,16 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode inputsMode, startDate time.T
 	}
 }
 
-func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time, ds inputDataset) {
+func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inputDataset) {
 	if fs.Err != nil {
 		return
 	}
 
-	endDate := startDate.Add(48 * time.Hour)
+	endDate := startDate.Add(42 * time.Hour)
 
 	if mode == WPSMode || mode == WPSDAMode {
-		buildWPSDir(fs, startDate, endDate, ds)
-		runWPS(fs, startDate, endDate)
+		//buildWPSDir(fs, startDate, endDate, ds)
+		//runWPS(fs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
 			buildNamelistForReal(fs, startDate, endDate, step)
 			runReal(fs, startDate, step)
@@ -421,11 +421,11 @@ func runWRFDA(fs *fsutil.Transaction, mode inputsMode, startDate time.Time, ds i
 	}
 }
 
-type inputsMode int
+type runMode int
 
 const (
 	// WPSMode - run only WPS
-	WPSMode inputsMode = iota
+	WPSMode runMode = iota
 	// DAMode - run only DA
 	DAMode
 	// WPSDAMode - run WPS followed by DA
@@ -440,6 +440,20 @@ const (
 	IFS
 )
 
+func readDomainCount(mode runMode) (int,error) {
+	nmlDir := conf.Config.NamelistsDir
+	namelistToReadMaxDom := "namelist.run.wrf"
+	if mode == WPSMode || mode == WPSDAMode {
+		namelistToReadMaxDom = "namelist.wps"
+	}
+
+	content, err := ioutil.ReadFile()
+}
+
+
+
+
+
 func main() {
 	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
 
@@ -448,7 +462,7 @@ func main() {
 
 	flag.Parse()
 
-	var mode inputsMode
+	var mode runMode
 	var input inputDataset
 
 	if *modeF == "WPS" {
@@ -486,6 +500,10 @@ func main() {
 
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
+	
+	domainCount,err := readDomainCount(mode)
+
+
 	wrfdaPrg = conf.Config.Folders.WRFDAPrg
 	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
 	wrfPrgMainRun = conf.Config.Folders.WRFMainRunPrg
@@ -504,7 +522,7 @@ func main() {
 		if !fs.Exists(".") {
 			log.Fatalf("Directory not found: %s", workdir.String())
 		}
-		buildWRFDAWorkdir(&fs, mode, dt)
+		//buildWRFDAWorkdir(&fs, mode, dt)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
