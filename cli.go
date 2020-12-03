@@ -3,11 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 	"time"
-	"ioutil"
+
 	"github.com/meteocima/wrfassim/conf"
 
 	namelist "github.com/meteocima/namelist-prepare/namelist"
@@ -64,7 +67,6 @@ func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, a
 	tmpl.RenderTo(args, targetNamelistFile)
 }
 
-
 func buildWPSDir(fs *fsutil.Transaction, start, end time.Time, ds inputDataset) {
 	if fs.Err != nil {
 		return
@@ -94,7 +96,7 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time, ds inputDataset) 
 	} else if ds == IFS {
 		fs.LinkAbs(wpsPrg.Join("ungrib/Variable_Tables/Vtable.ECMWF"), wpsDir.Join("Vtable"))
 	}
-	
+
 }
 
 func runWPS(fs *fsutil.Transaction, start, end time.Time) {
@@ -121,7 +123,7 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 
 }
 
-func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
+func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int, domainCount int) {
 	if fs.Err != nil {
 		return
 	}
@@ -184,12 +186,10 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int) {
 	fs.LinkAbs(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
 
 	// prev da results
-	daDir1 := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), 1)
-	daDir2 := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), 2)
-	daDir3 := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), 3)
-	fs.LinkAbs(daDir1.Join("wrfvar_output"), wrfDir.Join("wrfinput_d01"))
-	fs.LinkAbs(daDir2.Join("wrfvar_output"), wrfDir.Join("wrfinput_d02"))
-	fs.LinkAbs(daDir3.Join("wrfvar_output"), wrfDir.Join("wrfinput_d03"))
+	for domain := 1; domain <= domainCount; domain++ {
+		daDir := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), domain)
+		fs.LinkAbs(daDir.Join("wrfvar_output"), wrfDir.JoinF("wrfinput_d%02d", domain))
+	}
 }
 
 func buildDADirInDomain(fs *fsutil.Transaction, mode runMode, start, end time.Time, step, domain int) {
@@ -259,12 +259,6 @@ func buildDADirInDomain(fs *fsutil.Transaction, mode runMode, start, end time.Ti
 	fs.LinkAbs(observationsDir.JoinF("ob.ascii.%s", assimDateS), daDir.Join("ob.ascii"))
 }
 
-func runDAStep(fs *fsutil.Transaction, start time.Time, step int) {
-	runDAStepInDomain(fs, start, step, 1)
-	runDAStepInDomain(fs, start, step, 2)
-	runDAStepInDomain(fs, start, step, 3)
-}
-
 func runWRFStep(fs *fsutil.Transaction, start time.Time, step int) {
 	if fs.Err != nil {
 		return
@@ -299,10 +293,25 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 	fsutil.Logf("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
 }
 
-func buildDAStepDir(fs *fsutil.Transaction, mode runMode, start, end time.Time, step int) {
-	buildDADirInDomain(fs, mode, start, end, step, 1)
-	buildDADirInDomain(fs, mode, start, end, step, 2)
-	buildDADirInDomain(fs, mode, start, end, step, 3)
+func runDAStep(fs *fsutil.Transaction, start time.Time, step int, domainCount int) {
+	if fs.Err != nil {
+		return
+	}
+
+	for domain := 1; domain <= domainCount; domain++ {
+		runDAStepInDomain(fs, start, step, domain)
+	}
+}
+
+func buildDAStepDir(fs *fsutil.Transaction, mode runMode, start, end time.Time, step int, domainCount int) {
+	if fs.Err != nil {
+		return
+	}
+
+	for domain := 1; domain <= domainCount; domain++ {
+		buildDADirInDomain(fs, mode, start, end, step, domain)
+	}
+
 }
 
 func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int) {
@@ -320,7 +329,11 @@ func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int
 	)
 }
 
-func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
+func runReal(fs *fsutil.Transaction, startDate time.Time, step int, domainCount int) {
+	if fs.Err != nil {
+		return
+	}
+
 	fsutil.Logf("START REAL\n")
 
 	//fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", realProcCount, "./real.exe")
@@ -330,12 +343,15 @@ func runReal(fs *fsutil.Transaction, startDate time.Time, step int) {
 
 	fs.Copy(wpsDir.JoinF("wrfbdy_d01"), indir.JoinF("wrfbdy_d01_da%02d", step))
 
-	if step == 1 {
-		fs.Copy(wpsDir.Join("wrfinput_d01"), indir.Join("wrfinput_d01"))
-		fs.Copy(wpsDir.Join("wrfinput_d02"), indir.Join("wrfinput_d02"))
-		fs.Copy(wpsDir.Join("wrfinput_d03"), indir.Join("wrfinput_d03"))
+	if step != 1 {
+		fsutil.Logf("COMPLETED REAL\n")
+		return
 	}
-	fmt.Println(fs.Err)
+
+	for domain := 1; domain <= domainCount; domain++ {
+		fs.Copy(wpsDir.JoinF("wrfinput_d%02d", domain), indir.JoinF("wrfinput_d%02d", domain))
+	}
+
 	fsutil.Logf("COMPLETED REAL\n")
 
 }
@@ -394,7 +410,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode runMode, startDate time.Time
 	}
 }
 
-func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inputDataset) {
+func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inputDataset, domainCount int) {
 	if fs.Err != nil {
 		return
 	}
@@ -406,16 +422,16 @@ func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inpu
 		//runWPS(fs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
 			buildNamelistForReal(fs, startDate, endDate, step)
-			runReal(fs, startDate, step)
+			runReal(fs, startDate, step, domainCount)
 		}
 	}
 
 	if mode == DAMode || mode == WPSDAMode {
 		for step := 1; step <= 3; step++ {
-			buildDAStepDir(fs, mode, startDate, endDate, step)
-			runDAStep(fs, startDate, step)
+			buildDAStepDir(fs, mode, startDate, endDate, step, domainCount)
+			runDAStep(fs, startDate, step, domainCount)
 
-			buildWRFDir(fs, startDate, endDate, step)
+			buildWRFDir(fs, startDate, endDate, step, domainCount)
 			runWRFStep(fs, startDate, step)
 		}
 	}
@@ -432,27 +448,49 @@ const (
 	WPSDAMode
 )
 
-
 type inputDataset int
 
 const (
+	// GFS ...
 	GFS inputDataset = iota
+	// IFS ...
 	IFS
 )
 
-func readDomainCount(mode runMode) (int,error) {
-	nmlDir := conf.Config.NamelistsDir
+func readDomainCount(mode runMode) (int, error) {
+	nmlDir := conf.Config.Folders.NamelistsDir
 	namelistToReadMaxDom := "namelist.run.wrf"
 	if mode == WPSMode || mode == WPSDAMode {
 		namelistToReadMaxDom = "namelist.wps"
 	}
 
-	content, err := ioutil.ReadFile()
+	fileName := nmlDir.Join(namelistToReadMaxDom).String()
+	content, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return 0, fmt.Errorf("Cannot read %s:%w", fileName, err)
+	}
+
+	rows := strings.Split(string(content), "\n")
+	fmt.Println(rows)
+
+	for _, line := range rows {
+		trimdLine := strings.TrimLeft(line, " \t")
+		if strings.HasPrefix(trimdLine, "max_dom") {
+			fields := strings.Split(trimdLine, "=")
+			if len(fields) < 2 {
+				return 0, fmt.Errorf("Malformed max_dom property in `%s`: %s", trimdLine, err)
+			}
+			valueS := strings.Trim(fields[1], " \t,")
+			value, err := strconv.Atoi(valueS)
+			if err != nil {
+				return 0, fmt.Errorf("Cannot convert max_dom `%s` to integer: %w", valueS, err)
+			}
+			return value, nil
+		}
+	}
+
+	return 0, fmt.Errorf("max_dom property not found in %s", fileName)
 }
-
-
-
-
 
 func main() {
 	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
@@ -500,9 +538,7 @@ func main() {
 
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
-	
-	domainCount,err := readDomainCount(mode)
-
+	domainCount, err := readDomainCount(mode)
 
 	wrfdaPrg = conf.Config.Folders.WRFDAPrg
 	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
@@ -527,7 +563,7 @@ func main() {
 			log.Fatal(fs.Err)
 		}
 		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
-		runWRFDA(&fs, mode, dt, input)
+		runWRFDA(&fs, mode, dt, input, domainCount)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
