@@ -538,7 +538,12 @@ func main() {
 
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
+	fmt.Println("readDomainCount")
 	domainCount, err := readDomainCount(mode)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Println(domainCount,err)
 
 	wrfdaPrg = conf.Config.Folders.WRFDAPrg
 	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
