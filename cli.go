@@ -522,7 +522,7 @@ func main() {
 		if !fs.Exists(".") {
 			log.Fatalf("Directory not found: %s", workdir.String())
 		}
-		//buildWRFDAWorkdir(&fs, mode, dt)
+		buildWRFDAWorkdir(&fs, mode, dt)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
