@@ -56,7 +56,7 @@ func (tr *Transaction) Exists(file Path) bool {
 	}
 	_, err := os.Stat(tr.Root.JoinP(file).String())
 	if !os.IsNotExist(err) {
-		tr.Err = err
+		tr.Err = fmt.Errorf("Exists `%s`: Stat error: %w", file.String(), err)
 	}
 	return err == nil
 }
@@ -68,7 +68,7 @@ func (tr *Transaction) ReaddirAbs(dir Path) []string {
 	}
 	dirfd, err := os.Open(dir.String())
 	if err != nil {
-		tr.Err = err
+		tr.Err = fmt.Errorf("ReaddirAbs `%s`: Open error: %w", dir.String(), err)
 		return nil
 	}
 
@@ -76,11 +76,10 @@ func (tr *Transaction) ReaddirAbs(dir Path) []string {
 
 	res, err := dirfd.Readdirnames(0)
 	if !os.IsNotExist(err) {
-		tr.Err = err
+		tr.Err = fmt.Errorf("ReaddirAbs `%s`: Readdirnames error: %w", dir.String(), err)
 	}
 	return res
 }
-
 
 // Readdir ...
 func (tr *Transaction) Readdir(dir Path) []string {
@@ -106,19 +105,20 @@ func (tr *Transaction) CopyAbs(from, to Path) {
 	Logf("\tCopy from %s to %s\n", from, to)
 	source, err := os.Open(from.String())
 	if err != nil {
-		tr.Err = err
+		tr.Err = fmt.Errorf("CopyAbs from `%s` to `%s`: Open error: %w", from.String(), to.String(), err)
 		return
 	}
 	defer source.Close()
 
 	target, err := os.OpenFile(tr.Root.JoinP(to).String(), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(0664))
 	if err != nil {
-		tr.Err = err
+		tr.Err = fmt.Errorf("CopyAbs from `%s` to `%s`: OpenFile error: %w", from.String(), to.String(), err)
 		return
 	}
 	defer target.Close()
 
-	_, tr.Err = io.Copy(target, source)
+	_, err = io.Copy(target, source)
+	tr.Err = fmt.Errorf("CopyAbs from `%s` to `%s`: Copy error: %w", from.String(), to.String(), err)
 
 }
 
@@ -128,11 +128,14 @@ func (tr *Transaction) Save(targetPath Path, content []byte) {
 		return
 	}
 
-	tr.Err = ioutil.WriteFile(
+	err := ioutil.WriteFile(
 		tr.Root.JoinP(targetPath).String(),
 		content,
 		os.FileMode(0664),
 	)
+	if err != nil {
+		tr.Err = fmt.Errorf("Save to `%s`: WriteFile error: %w", targetPath.String(), err)
+	}
 }
 
 // Link ...
@@ -141,10 +144,13 @@ func (tr *Transaction) Link(from, to Path) {
 		return
 	}
 	Logf("\tLink from %s to %s (root %s)\n", tr.Root.JoinP(from).String(), tr.Root.JoinP(to).String(), tr.Root.String())
-	tr.Err = os.Symlink(
+	err := os.Symlink(
 		tr.Root.JoinP(from).String(),
 		tr.Root.JoinP(to).String(),
 	)
+	if err != nil {
+		tr.Err = fmt.Errorf("Link from `%s` to `%s`: Symlink error: %w", from.String(), to.String(), err)
+	}
 }
 
 // LinkAbs ...
@@ -153,10 +159,13 @@ func (tr *Transaction) LinkAbs(from, to Path) {
 		return
 	}
 	Logf("\tLink from %s to %s\n", from, to)
-	tr.Err = os.Symlink(
+	err := os.Symlink(
 		from.String(),
 		tr.Root.JoinP(to).String(),
 	)
+	if err != nil {
+		tr.Err = fmt.Errorf("LinkAbs from `%s` to `%s`: Symlink error: %w", from.String(), to.String(), err)
+	}
 }
 
 // MkDir ...
@@ -165,7 +174,10 @@ func (tr *Transaction) MkDir(dir Path) {
 		return
 	}
 
-	tr.Err = os.MkdirAll(tr.Root.JoinP(dir).String(), os.FileMode(0755))
+	err := os.MkdirAll(tr.Root.JoinP(dir).String(), os.FileMode(0755))
+	if err != nil {
+		tr.Err = fmt.Errorf("MkDir `%s`: MkdirAll error: %w", dir.String(), err)
+	}
 }
 
 // RmDir ...
@@ -175,7 +187,10 @@ func (tr *Transaction) RmDir(dir Path) {
 	}
 	Logf("\tRmDir %s\n", dir)
 
-	tr.Err = os.RemoveAll(tr.Root.JoinP(dir).String())
+	err := os.RemoveAll(tr.Root.JoinP(dir).String())
+	if err != nil {
+		tr.Err = fmt.Errorf("RmDir `%s`: RemoveAll error: %w", dir.String(), err)
+	}
 }
 
 // RmFile ...
@@ -184,7 +199,10 @@ func (tr *Transaction) RmFile(file Path) {
 		return
 	}
 	Logf("\tRmFile %s\n", file)
-	tr.Err = os.Remove(tr.Root.JoinP(file).String())
+	err := os.Remove(tr.Root.JoinP(file).String())
+	if err != nil {
+		tr.Err = fmt.Errorf("RmFile `%s`: Remove error: %w", file.String(), err)
+	}
 }
 
 // Run ...
@@ -197,11 +215,9 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 	cmd.Dir = tr.Root.JoinP(cwd).String()
 
 	if logFile != "" {
-		tr.Err = os.Remove(tr.Root.JoinP(logFile).String())
-		if os.IsNotExist(tr.Err) {
-			tr.Err = nil
-		}
-		if tr.Err != nil {
+		err := os.Remove(tr.Root.JoinP(logFile).String())
+		if err != nil && !os.IsNotExist(tr.Err) {
+			tr.Err = fmt.Errorf("Run `%s`: Remove error: %w", command, err)
 			return
 		}
 	}
@@ -212,12 +228,12 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 	if logFile == "" {
 		stdout, err := cmd.StdoutPipe()
 		if err != nil {
-			tr.Err = err
+			tr.Err = fmt.Errorf("Run `%s`: StdoutPipe error: %w", command, err)
 			return
 		}
 		stderr, err := cmd.StderrPipe()
 		if err != nil {
-			tr.Err = err
+			tr.Err = fmt.Errorf("Run `%s`: StderrPipe error: %w", command, err)
 			return
 		}
 
@@ -248,7 +264,7 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 		})
 
 		if err != nil {
-			tr.Err = err
+			tr.Err = fmt.Errorf("Run `%s`: TailFile error: %w", command, err)
 			return
 		}
 		tailProc = tail
@@ -257,7 +273,7 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 			for l := range tail.Lines {
 				pwrite.Write([]byte(l.Text + "\n"))
 				if l.Err != nil {
-					tr.Err = l.Err
+					tr.Err = fmt.Errorf("Run `%s`: TailFile error (lines): %w", command, err)
 					break
 				}
 			}
@@ -266,8 +282,9 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 
 	}
 
-	tr.Err = cmd.Start()
+	err := cmd.Start()
 	if tr.Err != nil {
+		tr.Err = fmt.Errorf("Run `%s`: Start error: %w", command, err)
 		return
 	}
 
@@ -277,12 +294,17 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 		for line != nil {
 			line, _, err = stdoutBuff.ReadLine()
 			if err != nil && err != io.EOF {
-				panic(err)
+				tr.Err = fmt.Errorf("Run `%s`: ReadLine error: %w", command, err)
 			}
 			fmt.Println(string(line))
 		}
 	}()
-	tr.Err = cmd.Wait()
+	err = cmd.Wait()
+
+	if err != nil {
+		tr.Err = fmt.Errorf("Run `%s`: Wait error: %w", command, err)
+	}
+
 	if tailProc != nil {
 		tailProc.Stop()
 	}
