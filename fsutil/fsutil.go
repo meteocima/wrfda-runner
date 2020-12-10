@@ -55,7 +55,7 @@ func (tr *Transaction) Exists(file Path) bool {
 		return false
 	}
 	_, err := os.Stat(tr.Root.JoinP(file).String())
-	if !os.IsNotExist(err) {
+	if !os.IsNotExist(err) && err != nil {
 		tr.Err = fmt.Errorf("Exists `%s`: Stat error: %w", file.String(), err)
 	}
 	return err == nil
