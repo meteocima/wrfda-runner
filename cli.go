@@ -367,7 +367,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode runMode, startDate time.Time
 	fs.MkDir(workdir)
 
 	fs.LinkAbs(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
-	fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
+	//fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
 	fs.LinkAbs(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
 	fs.LinkAbs(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
 	fs.LinkAbs(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
@@ -538,12 +538,12 @@ func main() {
 
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
-	fmt.Println("readDomainCount")
+	//fmt.Println("readDomainCount")
 	domainCount, err := readDomainCount(mode)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	fmt.Println(domainCount,err)
+	//fmt.Println(domainCount, err)
 
 	wrfdaPrg = conf.Config.Folders.WRFDAPrg
 	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
