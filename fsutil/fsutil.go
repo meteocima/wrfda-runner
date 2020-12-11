@@ -118,7 +118,9 @@ func (tr *Transaction) CopyAbs(from, to Path) {
 	defer target.Close()
 
 	_, err = io.Copy(target, source)
-	tr.Err = fmt.Errorf("CopyAbs from `%s` to `%s`: Copy error: %w", from.String(), to.String(), err)
+	if err != nil {
+		tr.Err = fmt.Errorf("CopyAbs from `%s` to `%s`: Copy error: %w", from.String(), to.String(), err)
+	}
 
 }
 
@@ -216,7 +218,7 @@ func (tr *Transaction) Run(cwd Path, logFile Path, command string, args ...strin
 
 	if logFile != "" {
 		err := os.Remove(tr.Root.JoinP(logFile).String())
-		if err != nil && !os.IsNotExist(tr.Err) {
+		if err != nil && !os.IsNotExist(err) {
 			tr.Err = fmt.Errorf("Run `%s`: Remove error: %w", command, err)
 			return
 		}

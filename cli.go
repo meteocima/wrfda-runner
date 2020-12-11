@@ -27,17 +27,17 @@ var wpsDir = fsutil.Path("wps")
 var inputsDir = fsutil.Path("../inputs")
 var observationsDir = fsutil.Path("../observations")
 
-//var geogridProcCount = "84"
-//var metgridProcCount = "84"
-//var wrfstepProcCount = "84"
-//var wrfdaProcCount = "50"
-//var realProcCount = "36"
+var geogridProcCount = "84"
+var metgridProcCount = "84"
+var wrfstepProcCount = "84"
+var wrfdaProcCount = "50"
+var realProcCount = "36"
 
-var geogridProcCount = "10"
-var metgridProcCount = "10"
-var wrfstepProcCount = "10"
-var wrfdaProcCount = "10"
-var realProcCount = "10"
+//var geogridProcCount = "10"
+//var metgridProcCount = "10"
+//var wrfstepProcCount = "10"
+//var wrfdaProcCount = "10"
+//var realProcCount = "10"
 
 func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
 	if fs.Err != nil {
@@ -471,7 +471,7 @@ func readDomainCount(mode runMode) (int, error) {
 	}
 
 	rows := strings.Split(string(content), "\n")
-	fmt.Println(rows)
+	//fmt.Println(rows)
 
 	for _, line := range rows {
 		trimdLine := strings.TrimLeft(line, " \t")
