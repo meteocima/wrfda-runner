@@ -192,7 +192,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int, domainC
 	}
 }
 
-func buildDADirInDomain(fs *fsutil.Transaction, mode runMode, start, end time.Time, step, domain int) {
+func buildDADirInDomain(fs *fsutil.Transaction, phase runPhase, start, end time.Time, step, domain int) {
 	if fs.Err != nil {
 		return
 	}
@@ -303,13 +303,13 @@ func runDAStep(fs *fsutil.Transaction, start time.Time, step int, domainCount in
 	}
 }
 
-func buildDAStepDir(fs *fsutil.Transaction, mode runMode, start, end time.Time, step int, domainCount int) {
+func buildDAStepDir(fs *fsutil.Transaction, phase runPhase, start, end time.Time, step int, domainCount int) {
 	if fs.Err != nil {
 		return
 	}
 
 	for domain := 1; domain <= domainCount; domain++ {
-		buildDADirInDomain(fs, mode, start, end, step, domain)
+		buildDADirInDomain(fs, phase, start, end, step, domain)
 	}
 
 }
@@ -356,7 +356,7 @@ func runReal(fs *fsutil.Transaction, startDate time.Time, step int, domainCount 
 
 }
 
-func buildWRFDAWorkdir(fs *fsutil.Transaction, mode runMode, startDate time.Time) {
+func buildWRFDAWorkdir(fs *fsutil.Transaction, phase runPhase, startDate time.Time) {
 	if fs.Err != nil {
 		return
 	}
@@ -381,7 +381,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode runMode, startDate time.Time
 
 	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
 
-	if mode == WPSMode || mode == WPSDAMode {
+	if phase == WPSPhase || phase == WPSThenDAPhase {
 		// GFS
 		gfsSources := folders.GFSArchive.Join(assimStartDate.Format("2006/01/02/1504"))
 		for _, filename := range fs.ReaddirAbs(gfsSources) {
@@ -392,7 +392,7 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode runMode, startDate time.Time
 
 	// Observations - weather stations and radars
 
-	if mode == DAMode || mode == WPSDAMode {
+	if phase == DAPhase || phase == WPSThenDAPhase {
 		cpObervations := func(dt time.Time) {
 			fs.CopyAbs(
 				folders.ObservationsArchive.JoinF("ob.radar.%s", dt.Format("2006010215")),
@@ -410,14 +410,14 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, mode runMode, startDate time.Time
 	}
 }
 
-func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inputDataset, domainCount int) {
+func runWRFDA(fs *fsutil.Transaction, phase runPhase, startDate time.Time, ds inputDataset, domainCount int) {
 	if fs.Err != nil {
 		return
 	}
 
 	endDate := startDate.Add(42 * time.Hour)
 
-	if mode == WPSMode || mode == WPSDAMode {
+	if phase == WPSPhase || phase == WPSThenDAPhase {
 		buildWPSDir(fs, startDate, endDate, ds)
 		runWPS(fs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
@@ -426,9 +426,9 @@ func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inpu
 		}
 	}
 
-	if mode == DAMode || mode == WPSDAMode {
+	if phase == DAPhase || phase == WPSThenDAPhase {
 		for step := 1; step <= 3; step++ {
-			buildDAStepDir(fs, mode, startDate, endDate, step, domainCount)
+			buildDAStepDir(fs, phase, startDate, endDate, step, domainCount)
 			runDAStep(fs, startDate, step, domainCount)
 
 			buildWRFDir(fs, startDate, endDate, step, domainCount)
@@ -437,15 +437,15 @@ func runWRFDA(fs *fsutil.Transaction, mode runMode, startDate time.Time, ds inpu
 	}
 }
 
-type runMode int
+type runPhase int
 
 const (
-	// WPSMode - run only WPS
-	WPSMode runMode = iota
-	// DAMode - run only DA
-	DAMode
-	// WPSDAMode - run WPS followed by DA
-	WPSDAMode
+	// WPSPhase - run only WPS
+	WPSPhase runPhase = iota
+	// DAPhase - run only DA
+	DAPhase
+	// WPSThenDAPhase - run WPS followed by DA
+	WPSThenDAPhase
 )
 
 type inputDataset int
@@ -457,10 +457,10 @@ const (
 	IFS
 )
 
-func readDomainCount(mode runMode) (int, error) {
+func readDomainCount(phase runPhase) (int, error) {
 	nmlDir := conf.Config.Folders.NamelistsDir
 	namelistToReadMaxDom := "namelist.run.wrf"
-	if mode == WPSMode || mode == WPSDAMode {
+	if phase == WPSPhase || phase == WPSThenDAPhase {
 		namelistToReadMaxDom = "namelist.wps"
 	}
 
@@ -493,24 +493,24 @@ func readDomainCount(mode runMode) (int, error) {
 }
 
 func main() {
-	usage := "Usage: wrfassim [-m WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -m is WPSDA\n"
+	usage := "Usage: wrfassim [-p WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -p is WPSDA\ndefault for -i is GFS\n"
 
-	modeF := flag.String("m", "WPSDA", "")
+	phaseF := flag.String("p", "WPSDA", "")
 	inputF := flag.String("i", "GFS", "")
 
 	flag.Parse()
 
-	var mode runMode
+	var phase runPhase
 	var input inputDataset
 
-	if *modeF == "WPS" {
-		mode = WPSMode
-	} else if *modeF == "DA" {
-		mode = DAMode
-	} else if *modeF == "WPSDA" {
-		mode = WPSDAMode
+	if *phaseF == "WPS" {
+		phase = WPSPhase
+	} else if *phaseF == "DA" {
+		phase = DAPhase
+	} else if *phaseF == "WPSDA" {
+		phase = WPSThenDAPhase
 	} else {
-		log.Fatalf("%s\nUnknown mode `%s`", usage, *modeF)
+		log.Fatalf("%s\nUnknown phase `%s`", usage, *phaseF)
 	}
 
 	if *inputF == "GFS" {
@@ -518,7 +518,7 @@ func main() {
 	} else if *inputF == "IFS" {
 		input = IFS
 	} else {
-		log.Fatalf("%s\nUnknown input dataset `%s`", usage, *modeF)
+		log.Fatalf("%s\nUnknown input dataset `%s`", usage, *phaseF)
 	}
 
 	args := flag.Args()
@@ -539,7 +539,7 @@ func main() {
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
 	//fmt.Println("readDomainCount")
-	domainCount, err := readDomainCount(mode)
+	domainCount, err := readDomainCount(phase)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -563,12 +563,12 @@ func main() {
 		if !fs.Exists(".") {
 			log.Fatalf("Directory not found: %s", workdir.String())
 		}
-		buildWRFDAWorkdir(&fs, mode, dt)
+		buildWRFDAWorkdir(&fs, phase, dt)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
 		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
-		runWRFDA(&fs, mode, dt, input, domainCount)
+		runWRFDA(&fs, phase, dt, input, domainCount)
 		if fs.Err != nil {
 			log.Fatal(fs.Err)
 		}
