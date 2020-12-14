@@ -24,12 +24,12 @@ func (pt Path) JoinF(part string, args ...interface{}) Path {
 	return Path(path.Join(string(pt), partF))
 }
 
+func (pt Path) String() string {
+	return string(pt)
+}
+
 // PathF ...
 func PathF(format string, args ...interface{}) Path {
 	p := fmt.Sprintf(format, args...)
 	return Path(p)
-}
-
-func (pt Path) String() string {
-	return string(pt)
 }
