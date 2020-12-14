@@ -1,21 +1,16 @@
 package conf
 
+// This module contains data structures
+// used to keep configuration variables
+// for the command.
+
 import (
 	"github.com/BurntSushi/toml"
 	"github.com/meteocima/wrfassim/fsutil"
 )
 
-/*
-type SmtpConf struct {
-	SmtpHost string
-	Port     uint64
-	MailFrom string
-	Username string
-	Password string
-}
-*/
-
-// FoldersConf ...
+// FoldersConf contains path of all
+// files and directories somehow needed by the command
 type FoldersConf struct {
 	GeodataDir          fsutil.Path
 	CovarMatrixesDir    fsutil.Path
@@ -28,18 +23,18 @@ type FoldersConf struct {
 	NamelistsDir        fsutil.Path
 }
 
-// Configuration ...
+// Configuration contains all configuration
+// sub structure (at the moment, only a FoldersConf struct.)
 type Configuration struct {
-	//Smtp    SmtpConf
 	Folders FoldersConf
 }
 
-// Config ...
+// Config is the runtime configuration readed from file.
 var Config Configuration
 
-// Init ...
+// Init initializes the system by reading configuration
+// from `confPath` file.
 func Init(confPath string) error {
 	_, err := toml.DecodeFile(confPath, &Config)
 	return err
-
 }
