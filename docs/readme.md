@@ -136,6 +136,6 @@ When running the simulation as a whole is preferred, the command allow to execut
 
 ### Processes organization within the WPS and DA phases.	
 
-This diagram represent which processes run in the two phases.
+The diagram above represent the main processes running in WPS and DA phases.
 
 ![Environments processes](media/ResponsibilityPerEnvironment.png)	
