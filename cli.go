@@ -140,13 +140,13 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int, domainC
 		nameListName = "namelist.run.wrf"
 	}
 
-	wrfDir := fsutil.PathF("wrf%02d", dtStart.Hour())
+	wrfDir := fsutil.NewPath("wrf%02d", dtStart.Hour())
 
 	fs.MkDir(wrfDir)
 
 	// boundary from same cycle da dir for domain 1
 
-	daBdy := fsutil.PathF("da%02d_d01/wrfbdy_d01", dtStart.Hour())
+	daBdy := fsutil.NewPath("da%02d_d01/wrfbdy_d01", dtStart.Hour())
 	fs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
 
 	// build namelist for wrf
@@ -187,7 +187,7 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int, domainC
 
 	// prev da results
 	for domain := 1; domain <= domainCount; domain++ {
-		daDir := fsutil.PathF("../da%02d_d%02d", dtStart.Hour(), domain)
+		daDir := fsutil.NewPath("../da%02d_d%02d", dtStart.Hour(), domain)
 		fs.LinkAbs(daDir.Join("wrfvar_output"), wrfDir.JoinF("wrfinput_d%02d", domain))
 	}
 }
@@ -199,7 +199,7 @@ func buildDADirInDomain(fs *fsutil.Transaction, phase runPhase, start, end time.
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 
 	// prepare da dir
-	daDir := fsutil.PathF("da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := fsutil.NewPath("da%02d_d%02d", assimDate.Hour(), domain)
 
 	fs.MkDir(daDir)
 
@@ -219,7 +219,7 @@ func buildDADirInDomain(fs *fsutil.Transaction, phase runPhase, start, end time.
 			prevHour += 24
 		}
 
-		previousStep := fsutil.PathF("wrf%02d", prevHour)
+		previousStep := fsutil.NewPath("wrf%02d", prevHour)
 		fs.Copy(previousStep.JoinF("wrfvar_input_d%02d", domain), daDir.Join("fg"))
 	}
 
@@ -267,7 +267,7 @@ func runWRFStep(fs *fsutil.Transaction, start time.Time, step int) {
 	fsutil.Logf("START WRF STEP %d\n", step)
 
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	wrfDir := fsutil.PathF("wrf%02d", assimDate.Hour())
+	wrfDir := fsutil.NewPath("wrf%02d", assimDate.Hour())
 
 	fs.Run(wrfDir, wrfDir.Join("rsl.out.0000"), "mpirun", "-n", wrfstepProcCount, "./wrf.exe")
 
@@ -282,7 +282,7 @@ func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int
 	fsutil.Logf("START DA STEP %d in DOMAIN %d\n", step, domain)
 
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	daDir := fsutil.PathF("da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := fsutil.NewPath("da%02d_d%02d", assimDate.Hour(), domain)
 
 	fs.Run(daDir, daDir.Join("rsl.out.0000"), "mpirun", "-n", wrfdaProcCount, "./da_wrfvar.exe")
 

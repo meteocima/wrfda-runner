@@ -28,8 +28,8 @@ func (pt Path) String() string {
 	return string(pt)
 }
 
-// PathF ...
-func PathF(format string, args ...interface{}) Path {
+// NewPath ...
+func NewPath(format string, args ...interface{}) Path {
 	p := fmt.Sprintf(format, args...)
 	return Path(p)
 }
