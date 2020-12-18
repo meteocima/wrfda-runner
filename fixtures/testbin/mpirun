@@ -1,0 +1,4 @@
+#!/bin/bash
+
+printf "mpirun %s %s %s\n" $1 $2 $3
+$3

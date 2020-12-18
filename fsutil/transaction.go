@@ -45,7 +45,7 @@ func (tr *Transaction) ReaddirAbs(dir Path) []string {
 	defer dirfd.Close()
 
 	res, err := dirfd.Readdirnames(0)
-	if !os.IsNotExist(err) {
+	if err != nil {
 		tr.Err = fmt.Errorf("ReaddirAbs `%s`: Readdirnames error: %w", dir.String(), err)
 	}
 	return res

@@ -9,15 +9,13 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${fileDirname}",
+            "program": "/home/parroit/Desktop/cimarepos/wrfda-runner/cli.go",
             "env": {},
-            "cwd": "tmp",
+            "cwd": "fixtures/testrun",
             "args": [
-                "-m",
-                "WPS",
                 ".",
-                "2020111100",
-                "2020111100"
+                "2020122500",
+                "2020122600"
             ]
         }
     ]

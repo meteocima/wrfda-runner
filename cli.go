@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -106,18 +107,37 @@ func runWPS(fs *fsutil.Transaction, start, end time.Time) {
 
 	fsutil.Logf("START WPS\n")
 
-	fmt.Println("running geogrid")
+	fsutil.Logf("Running geogrid")
 	fs.Run(wpsDir, wpsDir.Join("geogrid.log.0000"), "mpirun", "-n", geogridProcCount, "./geogrid.exe")
-	fmt.Println("running linkgrib ../gfs/*")
-	fs.Run(wpsDir, "", "./link_grib.csh", "../gfs/*")
-	fmt.Println("running ungrib")
-	fs.Run(wpsDir, "", "./ungrib.exe")
-	if end.Sub(start) > 24*time.Hour {
-		fmt.Println("running avg_tsfc")
-		fs.Run(wpsDir, "", "./avg_tsfc.exe")
+	if fs.Err != nil {
+		return
 	}
-	fmt.Println("running metgrid")
+
+	fsutil.Logf("Running linkgrib ../gfs/*")
+	fs.Run(wpsDir, "", "./link_grib.csh", "../gfs/*")
+	if fs.Err != nil {
+		return
+	}
+
+	fsutil.Logf("Running ungrib")
+	fs.Run(wpsDir, "", "./ungrib.exe")
+	if fs.Err != nil {
+		return
+	}
+
+	if end.Sub(start) > 24*time.Hour {
+		fsutil.Logf("Running avg_tsfc")
+		fs.Run(wpsDir, "", "./avg_tsfc.exe")
+		if fs.Err != nil {
+			return
+		}
+	}
+
+	fsutil.Logf("Running metgrid")
 	fs.Run(wpsDir, wpsDir.Join("metgrid.log.0000"), "mpirun", "-n", metgridProcCount, "./metgrid.exe")
+	if fs.Err != nil {
+		return
+	}
 
 	fsutil.Logf("COMPLETED WPS\n")
 
@@ -457,7 +477,7 @@ const (
 	IFS
 )
 
-func readDomainCount(phase runPhase) (int, error) {
+func readDomainCount(phase runPhase, workdir fsutil.Path) (int, error) {
 	nmlDir := conf.Config.Folders.NamelistsDir
 	namelistToReadMaxDom := "namelist.run.wrf"
 	if phase == WPSPhase || phase == WPSThenDAPhase {
@@ -471,7 +491,7 @@ func readDomainCount(phase runPhase) (int, error) {
 	}
 
 	rows := strings.Split(string(content), "\n")
-	//fmt.Println(rows)
+	//fsutil.Logf(rows)
 
 	for _, line := range rows {
 		trimdLine := strings.TrimLeft(line, " \t")
@@ -493,7 +513,7 @@ func readDomainCount(phase runPhase) (int, error) {
 }
 
 func main() {
-	usage := "Usage: wrfassim [-p WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -p is WPSDA\ndefault for -i is GFS\n"
+	usage := "Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -p is WPSDA\ndefault for -i is GFS\n"
 
 	phaseF := flag.String("p", "WPSDA", "")
 	inputF := flag.String("i", "GFS", "")
@@ -534,12 +554,16 @@ func main() {
 	if err != nil {
 		log.Fatal(usage + err.Error() + "\n")
 	}
-	workdir := fsutil.Path(args[0])
 
+	absWd, err := filepath.Abs(args[0])
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	workdir := fsutil.Path(absWd)
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
 	//fmt.Println("readDomainCount")
-	domainCount, err := readDomainCount(phase)
+	domainCount, err := readDomainCount(phase, workdir)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
