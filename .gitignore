@@ -30,3 +30,5 @@
 # vendor/
 wrfassim
 *.backup
+fixtures/testrun/inputs
+fixtures/testrun/202012??
