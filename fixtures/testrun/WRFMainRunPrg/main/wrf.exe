@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo WRF MAIN RUN CYCLES
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && basename `pwd` )"
+printf "\n**********  WRF STEP ****************\n" > rsl.out.0000
+printf "RUNNING ON DIR %s\n" "$DIR"  >> rsl.out.0000
+printf "wrfbdy %s\n" "`cat wrfbdy_d01`"  >> rsl.out.0000
+printf "wrfinput_d01 %s\n" "`cat wrfinput_d01`"  >> rsl.out.0000
+printf "wrfinput_d02 %s\n" "`cat wrfinput_d02`"  >> rsl.out.0000
+printf "wrfinput_d03 %s\n" "`cat wrfinput_d03`"  >> rsl.out.0000
+printf   "***********************************\n\n" >> rsl.out.0000
+
+echo wrfvar_input_d01 $DIR > wrfvar_input_d01
+echo wrfvar_input_d02 $DIR > wrfvar_input_d02
+echo wrfvar_input_d03 $DIR > wrfvar_input_d03

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo METGRID
+echo 'wrfinput_d01 from metgrid' > wrfinput_d01
+echo 'wrfinput_d02 from metgrid' > wrfinput_d02
+echo 'wrfinput_d03 from metgrid' > wrfinput_d03

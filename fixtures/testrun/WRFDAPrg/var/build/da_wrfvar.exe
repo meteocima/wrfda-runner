@@ -1,0 +1,76 @@
+#!/bin/bash
+
+echo DA_WRFVAR
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && basename `pwd` )"
+
+echo > rsl.out.0000
+
+IFS='_' read -r -a PARTS <<< "$DIR"
+
+CYCLE=${PARTS[0]}
+DOMAIN=${PARTS[1]}
+FG=`cat fg`
+
+if [[ $CYCLE == "da18" ]]; then
+    START_HOUR="2020-12-24_18:00:00"
+elif [[ $CYCLE == "da21" ]]; then
+    START_HOUR="2020-12-24_21:00:00"
+elif [[ $CYCLE == "da00" ]]; then
+    START_HOUR="2020-12-25_00:00:00"
+else
+    printf "\n**********  WRFDA ERROR ****************\n" >> rsl.out.0000
+    printf "unknown cycle: $CYCLE\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+fi
+
+if [[ $DOMAIN == "d01" ]]; then
+    WRFBDY=`cat wrfbdy_d01`
+    if [[ $WRFBDY != "wrfbdy_d01 $START_HOUR--2020-12-26_18:00:00 wps" ]]; then
+        printf "\n**********  WRFDA ERROR ****************\n" >> rsl.out.0000
+        printf "expecting bdy: wrfbdy_d01 $START_HOUR--2020-12-26_18:00:00 wps\n" >> rsl.out.0000
+        printf "actual bdy: $WRFBDY\n" >> rsl.out.0000
+        printf "***********************************\n\n" >> rsl.out.0000
+        exit 1
+    fi
+else
+    if [[ -f wrfbdy_d01 ]]; then
+        printf "\n**********  WRFDA ERROR ****************\n" >> rsl.out.0000
+        printf "unexpected wrfbdy_d01 on domain $DOMAIN\n" >> rsl.out.0000
+        printf "***********************************\n\n" >> rsl.out.0000
+        exit 1
+    fi
+fi
+
+if [[ $CYCLE == "da18" ]]; then
+    if [[ $FG != "wrfinput_$DOMAIN from metgrid" ]]; then
+        printf "\n**********  WRFDA ERROR ****************\n" >> rsl.out.0000
+        printf "expecting fg: wrfinput_$DOMAIN from metgrid\n" >> rsl.out.0000
+        printf "actual fg: $FG\n" >> rsl.out.0000
+        printf "***********************************\n\n" >> rsl.out.0000
+        exit 1
+    fi
+else 
+    if [[ $CYCLE == "da21" ]]; then
+        PREV="wrf18"
+    elif [[ $CYCLE == "da00" ]]; then
+        PREV="wrf21"
+    fi
+
+    if [[ $FG != "wrfvar_input_$DOMAIN from $PREV" ]]; then
+        printf "\n**********  WRFDA ERROR ****************\n" >> rsl.out.0000
+        printf "expecting fg: wrfvar_input_$DOMAIN from $PREV\n" >> rsl.out.0000
+        printf "actual fg: $FG\n" >> rsl.out.0000
+        printf "***********************************\n\n" >> rsl.out.0000
+        exit 1
+    fi
+fi
+
+printf "\n**********  WRFDA OK ****************\n" >> rsl.out.0000
+printf "cycle %s\n" "$CYCLE" >> rsl.out.0000
+printf "domain %s\n" "$DOMAIN" >> rsl.out.0000
+printf "RUNNING ON DIR: %s\n" "$DIR"  >> rsl.out.0000
+printf "fg: %s\n" "$FG" >> rsl.out.0000
+printf "bdy %s\n" "$WRFBDY" >> rsl.out.0000
+printf "***********************************\n\n" >> rsl.out.0000
+echo wrfvar_output $DIR > wrfvar_output

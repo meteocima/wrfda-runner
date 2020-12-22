@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo REAL
+echo wrfbdy_d01 > wrfbdy_d01
