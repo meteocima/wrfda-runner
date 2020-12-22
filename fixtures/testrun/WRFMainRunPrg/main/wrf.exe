@@ -1,16 +1,80 @@
 #!/bin/bash
 
 echo WRF MAIN RUN CYCLES
-
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && basename `pwd` )"
-printf "\n**********  WRF STEP ****************\n" > rsl.out.0000
+CYCLE=`echo $DIR | cut -c 4,5`
+
+if [[ $CYCLE == "18" ]]; then
+    printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
+    printf "Intermediate WRF cycles must be executed with WRFAssStepPrg.\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+elif [[ $CYCLE == "21" ]]; then
+    printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
+    printf "Intermediate WRF cycles must be executed with WRFAssStepPrg.\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+    
+elif [[ $CYCLE == "00" ]]; then
+    START_HOUR="2020-12-25_00:00:00"
+else
+    printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
+    printf "unknown cycle: $CYCLE\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+fi
+
+WRFBDY=`cat wrfbdy_d01`
+if [[ $WRFBDY != "wrfbdy_d01 $START_HOUR--2020-12-26_18:00:00 wps" ]]; then
+    printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
+    printf "expecting bdy: wrfbdy_d01 $START_HOUR--2020-12-26_18:00:00 wps\n" >> rsl.out.0000
+    printf "actual bdy: $WRFBDY\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+fi
+
+WRFINPUT_D01=`cat wrfinput_d01`
+WRFINPUT_D02=`cat wrfinput_d02`
+WRFINPUT_D03=`cat wrfinput_d03`
+
+if [[ $WRFINPUT_D01 == "wrfvar_output da${CYCLE}_d01" ]]; then
+    echo
+else
+    printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
+    printf "expecting wrfinput_d01: wrfvar_output da${CYCLE}_d01\n" >> rsl.out.0000
+    printf "actual wrfinput_d01: $WRFINPUT_D01\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+fi
+
+if [[ $WRFINPUT_D02 == "wrfvar_output da${CYCLE}_d02" ]]; then
+    echo
+else
+    printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
+    printf "expecting wrfinput_d02: wrfvar_output da${CYCLE}_d02\n" >> rsl.out.0000
+    printf "actual wrfinput_d02: $WRFINPUT_D02\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+fi
+
+if [[ $WRFINPUT_D03 == "wrfvar_output da${CYCLE}_d03" ]]; then
+    echo
+else
+    printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
+    printf "expecting wrfinput_d03: wrfvar_output da${CYCLE}_d03\n" >> rsl.out.0000
+    printf "actual wrfinput_d03: $WRFINPUT_D03\n" >> rsl.out.0000
+    printf "***********************************\n\n" >> rsl.out.0000
+    exit 1
+fi
+
+printf "\n**********  WRF MAIN RUN ****************\n" >> rsl.out.0000
 printf "RUNNING ON DIR %s\n" "$DIR"  >> rsl.out.0000
 printf "wrfbdy %s\n" "`cat wrfbdy_d01`"  >> rsl.out.0000
-printf "wrfinput_d01 %s\n" "`cat wrfinput_d01`"  >> rsl.out.0000
-printf "wrfinput_d02 %s\n" "`cat wrfinput_d02`"  >> rsl.out.0000
-printf "wrfinput_d03 %s\n" "`cat wrfinput_d03`"  >> rsl.out.0000
-printf   "***********************************\n\n" >> rsl.out.0000
+printf "wrfinput_d01 %s\n" "$WRFINPUT_D01"  >> rsl.out.0000
+printf "wrfinput_d02 %s\n" "$WRFINPUT_D02"  >> rsl.out.0000
+printf "wrfinput_d03 %s\n" "$WRFINPUT_D03"  >> rsl.out.0000
+printf "***********************************\n\n" >> rsl.out.0000
 
-echo wrfvar_input_d01 $DIR > wrfvar_input_d01
-echo wrfvar_input_d02 $DIR > wrfvar_input_d02
-echo wrfvar_input_d03 $DIR > wrfvar_input_d03
+#echo wrfvar_input_d01 from $DIR > wrfvar_input_d01
+#echo wrfvar_input_d02 from $DIR > wrfvar_input_d02
+#echo wrfvar_input_d03 from $DIR > wrfvar_input_d03
