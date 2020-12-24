@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/meteocima/virtual-server/config"
 	"github.com/meteocima/wrfassim/conf"
 
 	namelist "github.com/meteocima/namelist-prepare/namelist"
@@ -477,7 +478,7 @@ const (
 	IFS
 )
 
-func readDomainCount(phase runPhase, workdir fsutil.Path) (int, error) {
+func readDomainCount(phase runPhase) (int, error) {
 	nmlDir := conf.Config.Folders.NamelistsDir
 	namelistToReadMaxDom := "namelist.run.wrf"
 	if phase == WPSPhase || phase == WPSThenDAPhase {
@@ -563,7 +564,7 @@ func main() {
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
 	//fmt.Println("readDomainCount")
-	domainCount, err := readDomainCount(phase, workdir)
+	domainCount, err := readDomainCount(phase)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
