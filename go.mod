@@ -15,3 +15,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 
 )
+
+replace github.com/meteocima/virtual-server => /home/parroit/Desktop/cimarepos/virtual-server

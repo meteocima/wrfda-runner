@@ -8,22 +8,23 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/meteocima/virtual-server/vpath"
+
 	"github.com/BurntSushi/toml"
-	"github.com/meteocima/wrfassim/fsutil"
 )
 
 // FoldersConf contains path of all
 // files and directories somehow needed by the command
 type FoldersConf struct {
-	GeodataDir          fsutil.Path
-	CovarMatrixesDir    fsutil.Path
-	WPSPrg              fsutil.Path
-	WRFDAPrg            fsutil.Path
-	WRFMainRunPrg       fsutil.Path
-	WRFAssStepPrg       fsutil.Path
-	GFSArchive          fsutil.Path
-	ObservationsArchive fsutil.Path
-	NamelistsDir        fsutil.Path
+	GeodataDir          vpath.VirtualPath
+	CovarMatrixesDir    vpath.VirtualPath
+	WPSPrg              vpath.VirtualPath
+	WRFDAPrg            vpath.VirtualPath
+	WRFMainRunPrg       vpath.VirtualPath
+	WRFAssStepPrg       vpath.VirtualPath
+	GFSArchive          vpath.VirtualPath
+	ObservationsArchive vpath.VirtualPath
+	NamelistsDir        vpath.VirtualPath
 }
 
 // Configuration contains all configuration
@@ -41,7 +42,7 @@ func Init(confPath string) error {
 	_, err := toml.DecodeFile(confPath, &Config)
 	confDir := path.Dir(confPath)
 
-	confFile := fsutil.NewPath(confDir)
+	confFile := vpath.New("timoteo", confDir)
 	if !path.IsAbs(Config.Folders.GeodataDir.String()) {
 		Config.Folders.GeodataDir = confFile.JoinP(Config.Folders.GeodataDir)
 	}

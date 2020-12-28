@@ -6,28 +6,29 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	_ "github.com/meteocima/virtual-server/config"
+	"github.com/meteocima/virtual-server/connection"
 	"github.com/meteocima/wrfassim/conf"
 
 	namelist "github.com/meteocima/namelist-prepare/namelist"
-	"github.com/meteocima/wrfassim/fsutil"
+	"github.com/meteocima/virtual-server/ctx"
+	"github.com/meteocima/virtual-server/vpath"
 )
 
-var wrfdaPrg fsutil.Path
-var wrfPrgStep fsutil.Path
-var wrfPrgMainRun fsutil.Path
-var wpsPrg fsutil.Path
-var matrixDir fsutil.Path
+var wrfdaPrg vpath.VirtualPath
+var wrfPrgStep vpath.VirtualPath
+var wrfPrgMainRun vpath.VirtualPath
+var wpsPrg vpath.VirtualPath
+var matrixDir vpath.VirtualPath
 
-var wpsDir = fsutil.Path("wps")
-var inputsDir = fsutil.Path("../inputs")
-var observationsDir = fsutil.Path("../observations")
+var wpsDir = vpath.New("timoteo", "wps")
+var inputsDir = vpath.New("timoteo", "../inputs")
+var observationsDir = vpath.New("timoteo", "../observations")
 
 var geogridProcCount = "84"
 var metgridProcCount = "84"
@@ -41,8 +42,8 @@ var realProcCount = "36"
 //var wrfdaProcCount = "10"
 //var realProcCount = "10"
 
-func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, args namelist.Args) {
-	if fs.Err != nil {
+func renderNameList(vs *ctx.Context, source string, target vpath.VirtualPath, args namelist.Args) {
+	if vs.Err != nil {
 		return
 	}
 
@@ -52,7 +53,7 @@ func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, a
 	}
 
 	targetNamelistFile, err := os.OpenFile(
-		path.Join(fs.Root.String(), target.String()),
+		target.String(),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 		os.FileMode(0644),
 	)
@@ -69,15 +70,15 @@ func renderNameList(fs *fsutil.Transaction, source string, target fsutil.Path, a
 	tmpl.RenderTo(args, targetNamelistFile)
 }
 
-func buildWPSDir(fs *fsutil.Transaction, start, end time.Time, ds inputDataset) {
-	if fs.Err != nil {
+func buildWPSDir(vs *ctx.Context, start, end time.Time, ds inputDataset) {
+	if vs.Err != nil {
 		return
 	}
-	fs.MkDir(wpsDir)
+	vs.MkDir(wpsDir)
 
 	// build namelist for wrf
 	renderNameList(
-		fs,
+		vs,
 		"namelist.wps",
 		wpsDir.Join("namelist.wps"),
 		namelist.Args{
@@ -86,66 +87,75 @@ func buildWPSDir(fs *fsutil.Transaction, start, end time.Time, ds inputDataset) 
 		},
 	)
 
-	fs.LinkAbs(wpsPrg.Join("link_grib.csh"), wpsDir.Join("link_grib.csh"))
-	fs.LinkAbs(wpsPrg.Join("ungrib.exe"), wpsDir.Join("ungrib.exe"))
-	fs.LinkAbs(wpsPrg.Join("metgrid.exe"), wpsDir.Join("metgrid.exe"))
-	fs.LinkAbs(wpsPrg.Join("util/avg_tsfc.exe"), wpsDir.Join("avg_tsfc.exe"))
-	fs.LinkAbs(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
-	fs.LinkAbs(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
+	vs.Link(wpsPrg.Join("link_grib.csh"), wpsDir.Join("link_grib.csh"))
+	vs.Link(wpsPrg.Join("ungrib.exe"), wpsDir.Join("ungrib.exe"))
+	vs.Link(wpsPrg.Join("metgrid.exe"), wpsDir.Join("metgrid.exe"))
+	vs.Link(wpsPrg.Join("util/avg_tsfc.exe"), wpsDir.Join("avg_tsfc.exe"))
+	vs.Link(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
+	vs.Link(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
 
 	if ds == GFS {
-		fs.LinkAbs(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
+		vs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
 	} else if ds == IFS {
-		fs.LinkAbs(wpsPrg.Join("ungrib/Variable_Tables/Vtable.ECMWF"), wpsDir.Join("Vtable"))
+		vs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.ECMWF"), wpsDir.Join("Vtable"))
 	}
 
 }
 
-func runWPS(fs *fsutil.Transaction, start, end time.Time) {
-	if fs.Err != nil {
+func runWPS(vs *ctx.Context, start, end time.Time) {
+	if vs.Err != nil {
 		return
 	}
 
-	fsutil.Logf("START WPS\n")
+	vs.LogF("START WPS\n")
 
-	fsutil.Logf("Running geogrid")
-	fs.Run(wpsDir, wpsDir.Join("geogrid.log.0000"), "mpirun", "-n", geogridProcCount, "./geogrid.exe")
-	if fs.Err != nil {
+	vs.LogF("Running geogrid")
+	vs.Run(
+		wpsDir.Join("mpirun"),
+		[]string{"-n", geogridProcCount, "./geogrid.exe"},
+		connection.RunOptions{OutFromLog: wpsDir.Join("geogrid.log.0000")},
+	)
+	if vs.Err != nil {
 		return
 	}
 
-	fsutil.Logf("Running linkgrib ../gfs/*")
-	fs.Run(wpsDir, "", "./link_grib.csh", "../gfs/*")
-	if fs.Err != nil {
+	vs.LogF("Running linkgrib ../gfs/*")
+	vs.Run(wpsDir.Join("./link_grib.csh"), []string{"../gfs/*"})
+	if vs.Err != nil {
 		return
 	}
 
-	fsutil.Logf("Running ungrib")
-	fs.Run(wpsDir, "", "./ungrib.exe")
-	if fs.Err != nil {
+	vs.LogF("Running ungrib")
+	vs.Run(wpsDir.Join("./ungrib.exe"), []string{})
+	if vs.Err != nil {
 		return
 	}
 
 	if end.Sub(start) > 24*time.Hour {
-		fsutil.Logf("Running avg_tsfc")
-		fs.Run(wpsDir, "", "./avg_tsfc.exe")
-		if fs.Err != nil {
+		vs.LogF("Running avg_tsfc")
+		vs.Run(wpsDir.Join("./avg_tsfc.exe"), []string{"../gfs/*"})
+		if vs.Err != nil {
 			return
 		}
 	}
 
-	fsutil.Logf("Running metgrid")
-	fs.Run(wpsDir, wpsDir.Join("metgrid.log.0000"), "mpirun", "-n", metgridProcCount, "./metgrid.exe")
-	if fs.Err != nil {
+	vs.LogF("Running metgrid")
+	vs.Run(
+		wpsDir.Join("mpirun"),
+		[]string{"-n", metgridProcCount, "./metgrid.exe"},
+		connection.RunOptions{OutFromLog: wpsDir.Join("metgrid.log.0000")},
+	)
+
+	if vs.Err != nil {
 		return
 	}
 
-	fsutil.Logf("COMPLETED WPS\n")
+	vs.LogF("COMPLETED WPS\n")
 
 }
 
-func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int, domainCount int) {
-	if fs.Err != nil {
+func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount int) {
+	if vs.Err != nil {
 		return
 	}
 
@@ -161,18 +171,18 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int, domainC
 		nameListName = "namelist.run.wrf"
 	}
 
-	wrfDir := fsutil.NewPath("wrf%02d", dtStart.Hour())
+	wrfDir := vpath.New("timoteo", "wrf%02d", dtStart.Hour())
 
-	fs.MkDir(wrfDir)
+	vs.MkDir(wrfDir)
 
 	// boundary from same cycle da dir for domain 1
 
-	daBdy := fsutil.NewPath("da%02d_d01/wrfbdy_d01", dtStart.Hour())
-	fs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
+	daBdy := vpath.New("timoteo", "da%02d_d01/wrfbdy_d01", dtStart.Hour())
+	vs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
 
 	// build namelist for wrf
 	renderNameList(
-		fs,
+		vs,
 		nameListName,
 		wrfDir.Join("namelist.input"),
 		namelist.Args{
@@ -193,45 +203,45 @@ func buildWRFDir(fs *fsutil.Transaction, start, end time.Time, step int, domainC
 
 	wrfTarget := "wrf_var.txt"
 
-	fs.CopyAbs(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
+	vs.Copy(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
 
-	fs.LinkAbs(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
-	fs.LinkAbs(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
-	fs.LinkAbs(wrfPrg.Join("run/ozone_plev.formatted"), wrfDir.Join("ozone_plev.formatted"))
-	fs.LinkAbs(wrfPrg.Join("run/ozone_lat.formatted"), wrfDir.Join("ozone_lat.formatted"))
-	fs.LinkAbs(wrfPrg.Join("run/ozone.formatted"), wrfDir.Join("ozone.formatted"))
-	fs.LinkAbs(wrfPrg.Join("run/RRTMG_LW_DATA"), wrfDir.Join("RRTMG_LW_DATA"))
-	fs.LinkAbs(wrfPrg.Join("run/RRTMG_SW_DATA"), wrfDir.Join("RRTMG_SW_DATA"))
-	fs.LinkAbs(wrfPrg.Join("run/VEGPARM.TBL"), wrfDir.Join("VEGPARM.TBL"))
-	fs.LinkAbs(wrfPrg.Join("run/SOILPARM.TBL"), wrfDir.Join("SOILPARM.TBL"))
-	fs.LinkAbs(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
+	vs.Link(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
+	vs.Link(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
+	vs.Link(wrfPrg.Join("run/ozone_plev.formatted"), wrfDir.Join("ozone_plev.formatted"))
+	vs.Link(wrfPrg.Join("run/ozone_lat.formatted"), wrfDir.Join("ozone_lat.formatted"))
+	vs.Link(wrfPrg.Join("run/ozone.formatted"), wrfDir.Join("ozone.formatted"))
+	vs.Link(wrfPrg.Join("run/RRTMG_LW_DATA"), wrfDir.Join("RRTMG_LW_DATA"))
+	vs.Link(wrfPrg.Join("run/RRTMG_SW_DATA"), wrfDir.Join("RRTMG_SW_DATA"))
+	vs.Link(wrfPrg.Join("run/VEGPARM.TBL"), wrfDir.Join("VEGPARM.TBL"))
+	vs.Link(wrfPrg.Join("run/SOILPARM.TBL"), wrfDir.Join("SOILPARM.TBL"))
+	vs.Link(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
 
 	// prev da results
 	for domain := 1; domain <= domainCount; domain++ {
-		daDir := fsutil.NewPath("../da%02d_d%02d", dtStart.Hour(), domain)
-		fs.LinkAbs(daDir.Join("wrfvar_output"), wrfDir.JoinF("wrfinput_d%02d", domain))
+		daDir := vpath.New("timoteo", "../da%02d_d%02d", dtStart.Hour(), domain)
+		vs.Link(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
 	}
 }
 
-func buildDADirInDomain(fs *fsutil.Transaction, phase runPhase, start, end time.Time, step, domain int) {
-	if fs.Err != nil {
+func buildDADirInDomain(vs *ctx.Context, phase runPhase, start, end time.Time, step, domain int) {
+	if vs.Err != nil {
 		return
 	}
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 
 	// prepare da dir
-	daDir := fsutil.NewPath("da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := vpath.New("timoteo", "da%02d_d%02d", assimDate.Hour(), domain)
 
-	fs.MkDir(daDir)
+	vs.MkDir(daDir)
 
 	if domain == 1 {
 		// domain 1 in every step of assimilation receives boundaries from WPS or from 'inputs' directory.
-		fs.Copy(inputsDir.Join(start.Format("20060102")).JoinF("wrfbdy_d01_da%02d", step), daDir.Join("wrfbdy_d01"))
+		vs.Copy(inputsDir.Join(start.Format("20060102")).Join("wrfbdy_d01_da%02d", step), daDir.Join("wrfbdy_d01"))
 	}
 
 	if step == 1 {
 		// first step of assimilation receives fg input from WPS or from 'inputs' directory.
-		fs.Copy(inputsDir.Join(start.Format("20060102")).JoinF("wrfinput_d%02d", domain), daDir.Join("fg"))
+		vs.Copy(inputsDir.Join(start.Format("20060102")).Join("wrfinput_d%02d", domain), daDir.Join("fg"))
 	} else {
 		// the others steps receives input from the WRF run
 		// of previous step.
@@ -240,13 +250,13 @@ func buildDADirInDomain(fs *fsutil.Transaction, phase runPhase, start, end time.
 			prevHour += 24
 		}
 
-		previousStep := fsutil.NewPath("wrf%02d", prevHour)
-		fs.Copy(previousStep.JoinF("wrfvar_input_d%02d", domain), daDir.Join("fg"))
+		previousStep := vpath.New("timoteo", "wrf%02d", prevHour)
+		vs.Copy(previousStep.Join("wrfvar_input_d%02d", domain), daDir.Join("fg"))
 	}
 
 	// build namelist for wrfda
 	renderNameList(
-		fs,
+		vs,
 		fmt.Sprintf("namelist.d%02d.wrfda", domain),
 		daDir.Join("namelist.input"),
 		namelist.Args{
@@ -256,7 +266,7 @@ func buildDADirInDomain(fs *fsutil.Transaction, phase runPhase, start, end time.
 	)
 
 	renderNameList(
-		fs,
+		vs,
 		"parame.in",
 		daDir.Join("parame.in"),
 		namelist.Args{
@@ -266,81 +276,86 @@ func buildDADirInDomain(fs *fsutil.Transaction, phase runPhase, start, end time.
 	)
 
 	// link files from WRFDA build directory
-	fs.LinkAbs(wrfdaPrg.Join("var/build/da_wrfvar.exe"), daDir.Join("da_wrfvar.exe"))
-	fs.LinkAbs(wrfdaPrg.Join("var/run/VARBC.in"), daDir.Join("VARBC.in"))
-	fs.LinkAbs(wrfdaPrg.Join("run/LANDUSE.TBL"), daDir.Join("LANDUSE.TBL"))
-	fs.LinkAbs(wrfdaPrg.Join("var/build/da_update_bc.exe"), daDir.Join("da_update_bc.exe"))
+	vs.Link(wrfdaPrg.Join("var/build/da_wrfvar.exe"), daDir.Join("da_wrfvar.exe"))
+	vs.Link(wrfdaPrg.Join("var/run/VARBC.in"), daDir.Join("VARBC.in"))
+	vs.Link(wrfdaPrg.Join("run/LANDUSE.TBL"), daDir.Join("LANDUSE.TBL"))
+	vs.Link(wrfdaPrg.Join("var/build/da_update_bc.exe"), daDir.Join("da_update_bc.exe"))
 
 	// link covariance matrixes
-	fs.LinkAbs(matrixDir.JoinF("summer/be_2.5km_d%02d", domain), daDir.Join("be.dat"))
+	vs.Link(matrixDir.Join("summer/be_2.5km_d%02d", domain), daDir.Join("be.dat"))
 
 	// link observations
 	assimDateS := assimDate.Format("2006010215")
-	fs.LinkAbs(observationsDir.JoinF("ob.radar.%s", assimDateS), daDir.Join("ob.radar"))
-	fs.LinkAbs(observationsDir.JoinF("ob.ascii.%s", assimDateS), daDir.Join("ob.ascii"))
+	vs.Link(observationsDir.Join("ob.radar.%s", assimDateS), daDir.Join("ob.radar"))
+	vs.Link(observationsDir.Join("ob.ascii.%s", assimDateS), daDir.Join("ob.ascii"))
 }
 
-func runWRFStep(fs *fsutil.Transaction, start time.Time, step int) {
-	if fs.Err != nil {
+func runWRFStep(vs *ctx.Context, start time.Time, step int) {
+	if vs.Err != nil {
 		return
 	}
 
-	fsutil.Logf("START WRF STEP %d\n", step)
+	vs.LogF("START WRF STEP %d\n", step)
 
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	wrfDir := fsutil.NewPath("wrf%02d", assimDate.Hour())
+	wrfDir := vpath.New("timoteo", "wrf%02d", assimDate.Hour())
 
-	fs.Run(wrfDir, wrfDir.Join("rsl.out.0000"), "mpirun", "-n", wrfstepProcCount, "./wrf.exe")
+	vs.Run(wrfDir.Join("mpirun"), []string{"-n", wrfstepProcCount, "./wrf.exe"},
+		connection.RunOptions{OutFromLog: wrfDir.Join("rsl.out.0000")})
 
-	fsutil.Logf("COMPLETED WRF STEP %d\n", step)
+	vs.LogF("COMPLETED WRF STEP %d\n", step)
 }
 
-func runDAStepInDomain(fs *fsutil.Transaction, start time.Time, step, domain int) {
-	if fs.Err != nil {
+func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
+	if vs.Err != nil {
 		return
 	}
 
-	fsutil.Logf("START DA STEP %d in DOMAIN %d\n", step, domain)
+	vs.LogF("START DA STEP %d in DOMAIN %d\n", step, domain)
 
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	daDir := fsutil.NewPath("da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := vpath.New("timoteo", "da%02d_d%02d", assimDate.Hour(), domain)
 
-	fs.Run(daDir, daDir.Join("rsl.out.0000"), "mpirun", "-n", wrfdaProcCount, "./da_wrfvar.exe")
+	vs.Run(
+		daDir.Join("mpirun"),
+		[]string{"-n", wrfdaProcCount, "./da_wrfvar.exe"},
+		connection.RunOptions{OutFromLog: daDir.Join("rsl.out.0000")},
+	)
 
 	if domain == 1 {
-		fs.Run(daDir, "", "./da_update_bc.exe")
+		vs.Run(daDir.Join("./da_update_bc.exe"), []string{})
 	}
 
-	fsutil.Logf("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
+	vs.LogF("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
 }
 
-func runDAStep(fs *fsutil.Transaction, start time.Time, step int, domainCount int) {
-	if fs.Err != nil {
+func runDAStep(vs *ctx.Context, start time.Time, step int, domainCount int) {
+	if vs.Err != nil {
 		return
 	}
 
 	for domain := 1; domain <= domainCount; domain++ {
-		runDAStepInDomain(fs, start, step, domain)
+		runDAStepInDomain(vs, start, step, domain)
 	}
 }
 
-func buildDAStepDir(fs *fsutil.Transaction, phase runPhase, start, end time.Time, step int, domainCount int) {
-	if fs.Err != nil {
+func buildDAStepDir(vs *ctx.Context, phase runPhase, start, end time.Time, step int, domainCount int) {
+	if vs.Err != nil {
 		return
 	}
 
 	for domain := 1; domain <= domainCount; domain++ {
-		buildDADirInDomain(fs, phase, start, end, step, domain)
+		buildDADirInDomain(vs, phase, start, end, step, domain)
 	}
 
 }
 
-func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int) {
+func buildNamelistForReal(vs *ctx.Context, start, end time.Time, step int) {
 	assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 
 	// build namelist for real
 	renderNameList(
-		fs,
+		vs,
 		"namelist.real",
 		wpsDir.Join("namelist.input"),
 		namelist.Args{
@@ -350,64 +365,68 @@ func buildNamelistForReal(fs *fsutil.Transaction, start, end time.Time, step int
 	)
 }
 
-func runReal(fs *fsutil.Transaction, startDate time.Time, step int, domainCount int) {
-	if fs.Err != nil {
+func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
+	if vs.Err != nil {
 		return
 	}
 
-	fsutil.Logf("START REAL\n")
+	vs.LogF("START REAL\n")
 
-	fs.Run(wpsDir, wpsDir.Join("rsl.out.0000"), "mpirun", "-n", realProcCount, "./real.exe")
+	vs.Run(
+		wpsDir.Join("mpirun"),
+		[]string{"-n", realProcCount, "./real.exe"},
+		connection.RunOptions{OutFromLog: wpsDir.Join("rsl.out.0000")},
+	)
 
 	indir := inputsDir.Join(startDate.Format("20060102"))
-	fs.MkDir(indir)
+	vs.MkDir(indir)
 
-	fs.Copy(wpsDir.JoinF("wrfbdy_d01"), indir.JoinF("wrfbdy_d01_da%02d", step))
+	vs.Copy(wpsDir.Join("wrfbdy_d01"), indir.Join("wrfbdy_d01_da%02d", step))
 
 	if step != 1 {
-		fsutil.Logf("COMPLETED REAL\n")
+		vs.LogF("COMPLETED REAL\n")
 		return
 	}
 
 	for domain := 1; domain <= domainCount; domain++ {
-		fs.Copy(wpsDir.JoinF("wrfinput_d%02d", domain), indir.JoinF("wrfinput_d%02d", domain))
+		vs.Copy(wpsDir.Join("wrfinput_d%02d", domain), indir.Join("wrfinput_d%02d", domain))
 	}
 
-	fsutil.Logf("COMPLETED REAL\n")
+	vs.LogF("COMPLETED REAL\n")
 
 }
 
-func buildWRFDAWorkdir(fs *fsutil.Transaction, phase runPhase, startDate time.Time) {
-	if fs.Err != nil {
+func buildWRFDAWorkdir(vs *ctx.Context, phase runPhase, startDate time.Time) {
+	if vs.Err != nil {
 		return
 	}
 
 	folders := conf.Config.Folders
-	workdir := fsutil.Path(startDate.Format("20060102"))
+	workdir := vpath.New("timoteo", startDate.Format("20060102"))
 
-	fs.MkDir(workdir)
+	vs.MkDir(workdir)
 
-	fs.LinkAbs(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
-	//fs.LinkAbs(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
-	fs.LinkAbs(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
-	fs.LinkAbs(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
-	fs.LinkAbs(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
-	fs.LinkAbs(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
+	vs.Link(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
+	//vs.Link(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
+	vs.Link(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
+	vs.Link(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
+	vs.Link(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
+	vs.Link(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
 
 	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
 
-	fs.MkDir(gfsDir)
-	fs.MkDir(observationDir)
+	vs.MkDir(gfsDir)
+	vs.MkDir(observationDir)
 
 	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
 
 	if phase == WPSPhase || phase == WPSThenDAPhase {
 		// GFS
 		gfsSources := folders.GFSArchive.Join(assimStartDate.Format("2006/01/02/1504"))
-		for _, filename := range fs.ReaddirAbs(gfsSources) {
-			gfsFile := gfsSources.Join(filename)
-			fs.CopyAbs(gfsFile, gfsDir.Join(filename))
+		for _, filename := range vs.ReadDir(gfsSources) {
+			gfsFile := gfsSources.JoinP(filename)
+			vs.Copy(gfsFile, gfsDir.JoinP(filename))
 		}
 	}
 
@@ -415,14 +434,14 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, phase runPhase, startDate time.Ti
 
 	if phase == DAPhase || phase == WPSThenDAPhase {
 		cpObervations := func(dt time.Time) {
-			fs.CopyAbs(
-				folders.ObservationsArchive.JoinF("ob.radar.%s", dt.Format("2006010215")),
-				observationDir.JoinF("ob.radar.%s", dt.Format("2006010215")),
+			vs.Copy(
+				folders.ObservationsArchive.Join("ob.radar.%s", dt.Format("2006010215")),
+				observationDir.Join("ob.radar.%s", dt.Format("2006010215")),
 			)
 
-			fs.CopyAbs(
-				folders.ObservationsArchive.JoinF("ob.ascii.%s", dt.Format("2006010215")),
-				observationDir.JoinF("ob.ascii.%s", dt.Format("2006010215")),
+			vs.Copy(
+				folders.ObservationsArchive.Join("ob.ascii.%s", dt.Format("2006010215")),
+				observationDir.Join("ob.ascii.%s", dt.Format("2006010215")),
 			)
 		}
 		cpObervations(assimStartDate)
@@ -431,29 +450,29 @@ func buildWRFDAWorkdir(fs *fsutil.Transaction, phase runPhase, startDate time.Ti
 	}
 }
 
-func runWRFDA(fs *fsutil.Transaction, phase runPhase, startDate time.Time, ds inputDataset, domainCount int) {
-	if fs.Err != nil {
+func runWRFDA(vs *ctx.Context, phase runPhase, startDate time.Time, ds inputDataset, domainCount int) {
+	if vs.Err != nil {
 		return
 	}
 
 	endDate := startDate.Add(42 * time.Hour)
 
 	if phase == WPSPhase || phase == WPSThenDAPhase {
-		buildWPSDir(fs, startDate, endDate, ds)
-		runWPS(fs, startDate, endDate)
+		buildWPSDir(vs, startDate, endDate, ds)
+		runWPS(vs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
-			buildNamelistForReal(fs, startDate, endDate, step)
-			runReal(fs, startDate, step, domainCount)
+			buildNamelistForReal(vs, startDate, endDate, step)
+			runReal(vs, startDate, step, domainCount)
 		}
 	}
 
 	if phase == DAPhase || phase == WPSThenDAPhase {
 		for step := 1; step <= 3; step++ {
-			buildDAStepDir(fs, phase, startDate, endDate, step, domainCount)
-			runDAStep(fs, startDate, step, domainCount)
+			buildDAStepDir(vs, phase, startDate, endDate, step, domainCount)
+			runDAStep(vs, startDate, step, domainCount)
 
-			buildWRFDir(fs, startDate, endDate, step, domainCount)
-			runWRFStep(fs, startDate, step)
+			buildWRFDir(vs, startDate, endDate, step, domainCount)
+			runWRFStep(vs, startDate, step)
 		}
 	}
 }
@@ -492,7 +511,7 @@ func readDomainCount(phase runPhase) (int, error) {
 	}
 
 	rows := strings.Split(string(content), "\n")
-	//fsutil.Logf(rows)
+	//fsutil.LogF(rows)
 
 	for _, line := range rows {
 		trimdLine := strings.TrimLeft(line, " \t")
@@ -560,7 +579,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	workdir := fsutil.Path(absWd)
+	workdir := vpath.New("timoteo", absWd)
 	conf.Init(workdir.Join("wrfda-runner.cfg").String())
 
 	//fmt.Println("readDomainCount")
@@ -576,29 +595,30 @@ func main() {
 	wpsPrg = conf.Config.Folders.WPSPrg
 	matrixDir = conf.Config.Folders.CovarMatrixesDir
 
-	fsutil.Logf(
+	/*vs.LogF(
 		"RUN FOR DATES FROM %s TO %s\n",
 		startDate.Format("2006010215"),
 		endDate.Format("2006010215"),
 	)
+	*/
 
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
-		fsutil.Logf("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
-		fs := fsutil.Transaction{Root: workdir}
-		if !fs.Exists(".") {
+		vs := ctx.Context{}
+		vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
+		if !vs.Exists(vpath.New("timoteo", ".")) {
 			log.Fatalf("Directory not found: %s", workdir.String())
 		}
-		buildWRFDAWorkdir(&fs, phase, dt)
-		if fs.Err != nil {
-			log.Fatal(fs.Err)
+		buildWRFDAWorkdir(&vs, phase, dt)
+		if vs.Err != nil {
+			log.Fatal(vs.Err)
 		}
-		fs = fsutil.Transaction{Root: workdir.Join(dt.Format("20060102"))}
-		runWRFDA(&fs, phase, dt, input, domainCount)
-		if fs.Err != nil {
-			log.Fatal(fs.Err)
+		vs = ctx.Context{}
+		runWRFDA(&vs, phase, dt, input, domainCount)
+		if vs.Err != nil {
+			log.Fatal(vs.Err)
 		}
 
-		fsutil.Logf("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
+		vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
 	}
 
 }
