@@ -5,12 +5,10 @@ package conf
 // for the command.
 
 import (
-	"fmt"
 	"path"
 
-	"github.com/meteocima/virtual-server/vpath"
-
 	"github.com/BurntSushi/toml"
+	"github.com/meteocima/virtual-server/vpath"
 )
 
 // FoldersConf contains path of all
@@ -39,6 +37,7 @@ var Config Configuration
 // Init initializes the system by reading configuration
 // from `confPath` file.
 func Init(confFile vpath.VirtualPath) error {
+
 	_, err := toml.DecodeFile(confFile.Path, &Config)
 	confDir := confFile.Dir()
 
@@ -77,6 +76,6 @@ func Init(confFile vpath.VirtualPath) error {
 	if !path.IsAbs(Config.Folders.NamelistsDir.Path) {
 		Config.Folders.NamelistsDir = confDir.JoinP(Config.Folders.NamelistsDir)
 	}
-	fmt.Println(Config.Folders)
+	//fmt.Println(Config.Folders)
 	return err
 }

@@ -3,30 +3,32 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
+
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	_ "github.com/meteocima/virtual-server/config"
-	"github.com/meteocima/virtual-server/connection"
+	vsConfig "github.com/meteocima/virtual-server/config"
 	"github.com/meteocima/wrfassim/conf"
+	"github.com/meteocima/wrfassim/folders"
 
-	namelist "github.com/meteocima/namelist-prepare/namelist"
+	"github.com/meteocima/namelist-prepare/namelist"
 	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/vpath"
+
+	"github.com/meteocima/virtual-server/connection"
 )
 
 var wrfdaPrg vpath.VirtualPath
 var wrfPrgStep vpath.VirtualPath
 var wrfPrgMainRun vpath.VirtualPath
-var wpsPrg vpath.VirtualPath
+
+//var wpsPrg vpath.VirtualPath
 var matrixDir vpath.VirtualPath
 
-var wpsDir = vpath.New("localhost", "wps")
+//var wpsDir = vpath.New("localhost", "wps")
 var inputsDir = vpath.New("localhost", "../inputs")
 var observationsDir = vpath.New("localhost", "../observations")
 
@@ -47,33 +49,24 @@ func renderNameList(vs *ctx.Context, source string, target vpath.VirtualPath, ar
 		return
 	}
 
-	tmplFile, err := os.Open(conf.Config.Folders.NamelistsDir.Join(source).String())
-	if err != nil {
-		log.Fatalf("open template: %s", err.Error())
-	}
-
-	targetNamelistFile, err := os.OpenFile(
-		target.String(),
-		os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
-		os.FileMode(0644),
-	)
-	defer targetNamelistFile.Close()
-
-	if err != nil {
-		log.Fatalf("open namelist.real: %s", err.Error())
-	}
+	tmplFile := vs.ReadString(folders.NamelistFile(source))
 
 	args.Hours = int(args.End.Sub(args.Start).Hours())
 
 	tmpl := namelist.Tmpl{}
-	tmpl.ReadTemplateFrom(tmplFile)
-	tmpl.RenderTo(args, targetNamelistFile)
+	tmpl.ReadTemplateFrom(strings.NewReader(tmplFile))
+
+	var renderedNamelist strings.Builder
+	tmpl.RenderTo(args, &renderedNamelist)
+	vs.WriteString(target, renderedNamelist.String())
 }
 
-func buildWPSDir(vs *ctx.Context, start, end time.Time, ds inputDataset) {
+func buildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 	if vs.Err != nil {
 		return
 	}
+	wpsDir := folders.WPSWorkDir(start)
+	wpsPrg := folders.Cfg.WPSPrg
 	vs.MkDir(wpsDir)
 
 	// build namelist for wrf
@@ -94,9 +87,9 @@ func buildWPSDir(vs *ctx.Context, start, end time.Time, ds inputDataset) {
 	vs.Link(wrfPrgStep.Join("run/real.exe"), wpsDir.Join("real.exe"))
 	vs.Link(wpsPrg.Join("geogrid.exe"), wpsDir.Join("geogrid.exe"))
 
-	if ds == GFS {
+	if ds == conf.GFS {
 		vs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.GFS"), wpsDir.Join("Vtable"))
-	} else if ds == IFS {
+	} else if ds == conf.IFS {
 		vs.Link(wpsPrg.Join("ungrib/Variable_Tables/Vtable.ECMWF"), wpsDir.Join("Vtable"))
 	}
 
@@ -108,42 +101,58 @@ func runWPS(vs *ctx.Context, start, end time.Time) {
 	}
 
 	vs.LogF("START WPS\n")
+	wpsDir := folders.WPSWorkDir(start)
 
 	vs.LogF("Running geogrid")
-	vs.Run(
-		wpsDir.Join("mpirun"),
+	vs.Exec(
+		vpath.New("localhost", "mpirun"),
 		[]string{"-n", geogridProcCount, "./geogrid.exe"},
-		connection.RunOptions{OutFromLog: wpsDir.Join("geogrid.log.0000")},
+		connection.RunOptions{
+			OutFromLog: wpsDir.Join("geogrid.log.0000"),
+			Cwd:        wpsDir,
+		},
 	)
 	if vs.Err != nil {
 		return
 	}
 
 	vs.LogF("Running linkgrib ../gfs/*")
-	vs.Run(wpsDir.Join("./link_grib.csh"), []string{"../gfs/*"})
+	vs.Exec(wpsDir.Join("./link_grib.csh"), []string{"../gfs/*"}, connection.RunOptions{
+
+		Cwd: wpsDir,
+	})
 	if vs.Err != nil {
 		return
 	}
 
 	vs.LogF("Running ungrib")
-	vs.Run(wpsDir.Join("./ungrib.exe"), []string{})
+	vs.Exec(wpsDir.Join("./ungrib.exe"), []string{}, connection.RunOptions{
+
+		Cwd: wpsDir,
+	})
 	if vs.Err != nil {
 		return
 	}
 
 	if end.Sub(start) > 24*time.Hour {
 		vs.LogF("Running avg_tsfc")
-		vs.Run(wpsDir.Join("./avg_tsfc.exe"), []string{"../gfs/*"})
+		vs.Exec(wpsDir.Join("./avg_tsfc.exe"), []string{"../gfs/*"}, connection.RunOptions{
+
+			Cwd: wpsDir,
+		})
 		if vs.Err != nil {
 			return
 		}
 	}
 
 	vs.LogF("Running metgrid")
-	vs.Run(
-		wpsDir.Join("mpirun"),
+	vs.Exec(
+		vpath.New("localhost", "mpirun"),
 		[]string{"-n", metgridProcCount, "./metgrid.exe"},
-		connection.RunOptions{OutFromLog: wpsDir.Join("metgrid.log.0000")},
+		connection.RunOptions{
+			OutFromLog: wpsDir.Join("metgrid.log.0000"),
+			Cwd:        wpsDir,
+		},
 	)
 
 	if vs.Err != nil {
@@ -171,13 +180,12 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 		nameListName = "namelist.run.wrf"
 	}
 
-	wrfDir := vpath.New("localhost", "wrf%02d", dtStart.Hour())
+	wrfDir := folders.WRFWorkDir(start, step)
 
 	vs.MkDir(wrfDir)
 
 	// boundary from same cycle da dir for domain 1
-
-	daBdy := vpath.New("localhost", "da%02d_d01/wrfbdy_d01", dtStart.Hour())
+	daBdy := folders.DAWorkDir(start, 1, step).Join("wrfbdy_d01")
 	vs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
 
 	// build namelist for wrf
@@ -201,9 +209,10 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 		wrfvar = "wrf_var.txt.wrf_03"
 	}
 
-	wrfTarget := "wrf_var.txt"
-
-	vs.Copy(conf.Config.Folders.NamelistsDir.Join(wrfvar), wrfDir.Join(wrfTarget))
+	vs.Copy(
+		folders.NamelistFile(wrfvar),
+		wrfDir.Join("wrf_var.txt"),
+	)
 
 	vs.Link(wrfPrg.Join("main/wrf.exe"), wrfDir.Join("wrf.exe"))
 	vs.Link(wrfPrg.Join("run/LANDUSE.TBL"), wrfDir.Join("LANDUSE.TBL"))
@@ -218,30 +227,36 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 
 	// prev da results
 	for domain := 1; domain <= domainCount; domain++ {
-		daDir := vpath.New("localhost", "../da%02d_d%02d", dtStart.Hour(), domain)
+		daDir := folders.DAWorkDir(start, domain, step)
 		vs.Link(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
 	}
 }
 
-func buildDADirInDomain(vs *ctx.Context, phase runPhase, start, end time.Time, step, domain int) {
+func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Time, step, domain int) {
 	if vs.Err != nil {
 		return
 	}
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 
 	// prepare da dir
-	daDir := vpath.New("localhost", "da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := folders.DAWorkDir(start, domain, step)
 
 	vs.MkDir(daDir)
 
 	if domain == 1 {
 		// domain 1 in every step of assimilation receives boundaries from WPS or from 'inputs' directory.
-		vs.Copy(inputsDir.Join(start.Format("20060102")).Join("wrfbdy_d01_da%02d", step), daDir.Join("wrfbdy_d01"))
+		vs.Copy(
+			inputsDir.Join(start.Format("20060102")).Join("wrfbdy_d01_da%02d", step),
+			daDir.Join("wrfbdy_d01"),
+		)
 	}
 
 	if step == 1 {
 		// first step of assimilation receives fg input from WPS or from 'inputs' directory.
-		vs.Copy(inputsDir.Join(start.Format("20060102")).Join("wrfinput_d%02d", domain), daDir.Join("fg"))
+		vs.Copy(
+			inputsDir.Join(start.Format("20060102")).Join("wrfinput_d%02d", domain),
+			daDir.Join("fg"),
+		)
 	} else {
 		// the others steps receives input from the WRF run
 		// of previous step.
@@ -250,8 +265,12 @@ func buildDADirInDomain(vs *ctx.Context, phase runPhase, start, end time.Time, s
 			prevHour += 24
 		}
 
-		previousStep := vpath.New("localhost", "wrf%02d", prevHour)
-		vs.Copy(previousStep.Join("wrfvar_input_d%02d", domain), daDir.Join("fg"))
+		previousStep := folders.WRFWorkDir(start, step-1)
+
+		vs.Copy(
+			previousStep.Join("wrfvar_input_d%02d", domain),
+			daDir.Join("fg"),
+		)
 	}
 
 	// build namelist for wrfda
@@ -297,11 +316,15 @@ func runWRFStep(vs *ctx.Context, start time.Time, step int) {
 
 	vs.LogF("START WRF STEP %d\n", step)
 
-	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	wrfDir := vpath.New("localhost", "wrf%02d", assimDate.Hour())
+	wrfDir := folders.WRFWorkDir(start, step)
 
-	vs.Run(wrfDir.Join("mpirun"), []string{"-n", wrfstepProcCount, "./wrf.exe"},
-		connection.RunOptions{OutFromLog: wrfDir.Join("rsl.out.0000")})
+	vs.Exec(
+		vpath.New(wrfDir.Host, "mpirun"),
+		[]string{"-n", wrfstepProcCount, "./wrf.exe"},
+		connection.RunOptions{OutFromLog: wrfDir.Join("rsl.out.0000"),
+			Cwd: wrfDir,
+		},
+	)
 
 	vs.LogF("COMPLETED WRF STEP %d\n", step)
 }
@@ -313,17 +336,21 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 
 	vs.LogF("START DA STEP %d in DOMAIN %d\n", step, domain)
 
-	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	daDir := vpath.New("localhost", "da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := folders.DAWorkDir(start, domain, step)
 
-	vs.Run(
-		daDir.Join("mpirun"),
+	vs.Exec(
+		vpath.New("localhost", "mpirun"),
 		[]string{"-n", wrfdaProcCount, "./da_wrfvar.exe"},
-		connection.RunOptions{OutFromLog: daDir.Join("rsl.out.0000")},
+		connection.RunOptions{
+			OutFromLog: daDir.Join("rsl.out.0000"),
+			Cwd:        daDir,
+		},
 	)
 
 	if domain == 1 {
-		vs.Run(daDir.Join("./da_update_bc.exe"), []string{})
+		vs.Exec(daDir.Join("./da_update_bc.exe"), []string{}, connection.RunOptions{
+			Cwd: daDir,
+		})
 	}
 
 	vs.LogF("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
@@ -339,7 +366,7 @@ func runDAStep(vs *ctx.Context, start time.Time, step int, domainCount int) {
 	}
 }
 
-func buildDAStepDir(vs *ctx.Context, phase runPhase, start, end time.Time, step int, domainCount int) {
+func buildDAStepDir(vs *ctx.Context, phase conf.RunPhase, start, end time.Time, step int, domainCount int) {
 	if vs.Err != nil {
 		return
 	}
@@ -352,6 +379,7 @@ func buildDAStepDir(vs *ctx.Context, phase runPhase, start, end time.Time, step 
 
 func buildNamelistForReal(vs *ctx.Context, start, end time.Time, step int) {
 	assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
+	wpsDir := folders.WPSWorkDir(start)
 
 	// build namelist for real
 	renderNameList(
@@ -369,13 +397,17 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 	if vs.Err != nil {
 		return
 	}
+	wpsDir := folders.WPSWorkDir(startDate)
 
 	vs.LogF("START REAL\n")
 
-	vs.Run(
-		wpsDir.Join("mpirun"),
+	vs.Exec(
+		vpath.New("localhost", "mpirun"),
 		[]string{"-n", realProcCount, "./real.exe"},
-		connection.RunOptions{OutFromLog: wpsDir.Join("rsl.out.0000")},
+		connection.RunOptions{
+			OutFromLog: wpsDir.Join("rsl.out.0000"),
+			Cwd:        wpsDir,
+		},
 	)
 
 	indir := inputsDir.Join(startDate.Format("20060102"))
@@ -396,13 +428,13 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 
 }
 
-func buildWRFDAWorkdir(vs *ctx.Context, phase runPhase, startDate time.Time) {
+func buildWorkdirForDate(vs *ctx.Context, phase conf.RunPhase, startDate time.Time) {
 	if vs.Err != nil {
 		return
 	}
 
-	folders := conf.Config.Folders
-	workdir := vpath.New("localhost", startDate.Format("20060102"))
+	//folders := conf.Config.Folders
+	workdir := folders.WorkdirForDate(startDate)
 
 	vs.MkDir(workdir)
 
@@ -419,45 +451,42 @@ func buildWRFDAWorkdir(vs *ctx.Context, phase runPhase, startDate time.Time) {
 	vs.MkDir(gfsDir)
 	vs.MkDir(observationDir)
 
-	assimStartDate := startDate.Add(2 * time.Duration(-3) * time.Hour)
-
-	if phase == WPSPhase || phase == WPSThenDAPhase {
+	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		// GFS
-		gfsSources := folders.GFSArchive.Join(assimStartDate.Format("2006/01/02/1504"))
-		for _, filename := range vs.ReadDir(gfsSources) {
-			gfsFile := gfsSources.JoinP(filename)
-			vs.Copy(gfsFile, gfsDir.JoinP(filename))
+		gfsSources := folders.GFSSources(startDate)
+		for _, gfsFile := range vs.ReadDir(gfsSources) {
+			vs.Copy(gfsFile, gfsDir.Join(gfsFile.Filename()))
 		}
 	}
 
 	// Observations - weather stations and radars
-
-	if phase == DAPhase || phase == WPSThenDAPhase {
-		cpObervations := func(dt time.Time) {
-			vs.Copy(
-				folders.ObservationsArchive.Join("ob.radar.%s", dt.Format("2006010215")),
-				observationDir.Join("ob.radar.%s", dt.Format("2006010215")),
-			)
-
-			vs.Copy(
-				folders.ObservationsArchive.Join("ob.ascii.%s", dt.Format("2006010215")),
-				observationDir.Join("ob.ascii.%s", dt.Format("2006010215")),
-			)
-		}
-		cpObervations(assimStartDate)
-		cpObervations(assimStartDate.Add(3 * time.Hour))
-		cpObervations(assimStartDate.Add(6 * time.Hour))
+	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
+		cpObservations(vs, 1, startDate)
+		cpObservations(vs, 2, startDate)
+		cpObservations(vs, 3, startDate)
 	}
 }
 
-func runWRFDA(vs *ctx.Context, phase runPhase, startDate time.Time, ds inputDataset, domainCount int) {
+func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
+	vs.Copy(
+		folders.RadarObsArchive(startDate, cycle),
+		folders.RadarObsForDate(startDate, cycle),
+	)
+
+	vs.Copy(
+		folders.StationsObsArchive(startDate, cycle),
+		folders.StationsObsForDate(startDate, cycle),
+	)
+}
+
+func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate time.Time, ds conf.InputDataset, domainCount int) {
 	if vs.Err != nil {
 		return
 	}
 
 	endDate := startDate.Add(42 * time.Hour)
 
-	if phase == WPSPhase || phase == WPSThenDAPhase {
+	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		buildWPSDir(vs, startDate, endDate, ds)
 		runWPS(vs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
@@ -466,7 +495,7 @@ func runWRFDA(vs *ctx.Context, phase runPhase, startDate time.Time, ds inputData
 		}
 	}
 
-	if phase == DAPhase || phase == WPSThenDAPhase {
+	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
 		for step := 1; step <= 3; step++ {
 			buildDAStepDir(vs, phase, startDate, endDate, step, domainCount)
 			runDAStep(vs, startDate, step, domainCount)
@@ -477,38 +506,15 @@ func runWRFDA(vs *ctx.Context, phase runPhase, startDate time.Time, ds inputData
 	}
 }
 
-type runPhase int
-
-const (
-	// WPSPhase - run only WPS
-	WPSPhase runPhase = iota
-	// DAPhase - run only DA
-	DAPhase
-	// WPSThenDAPhase - run WPS followed by DA
-	WPSThenDAPhase
-)
-
-type inputDataset int
-
-const (
-	// GFS ...
-	GFS inputDataset = iota
-	// IFS ...
-	IFS
-)
-
-func readDomainCount(vs *ctx.Context, phase runPhase) (int, error) {
+func readDomainCount(vs *ctx.Context, phase conf.RunPhase) (int, error) {
 	nmlDir := conf.Config.Folders.NamelistsDir
 	namelistToReadMaxDom := "namelist.run.wrf"
-	if phase == WPSPhase || phase == WPSThenDAPhase {
+	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		namelistToReadMaxDom = "namelist.wps"
 	}
 
-	fileName := nmlDir.Join(namelistToReadMaxDom).String()
-	content, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		return 0, fmt.Errorf("Cannot read %s:%w", fileName, err)
-	}
+	fileName := nmlDir.Join(namelistToReadMaxDom)
+	content := vs.ReadString(fileName)
 
 	rows := strings.Split(string(content), "\n")
 	//fsutil.LogF(rows)
@@ -518,7 +524,7 @@ func readDomainCount(vs *ctx.Context, phase runPhase) (int, error) {
 		if strings.HasPrefix(trimdLine, "max_dom") {
 			fields := strings.Split(trimdLine, "=")
 			if len(fields) < 2 {
-				return 0, fmt.Errorf("Malformed max_dom property in `%s`: %s", trimdLine, err)
+				return 0, fmt.Errorf("Malformed max_dom property in `%s`: %s", fileName.String(), trimdLine)
 			}
 			valueS := strings.Trim(fields[1], " \t,")
 			value, err := strconv.Atoi(valueS)
@@ -540,23 +546,23 @@ func main() {
 
 	flag.Parse()
 
-	var phase runPhase
-	var input inputDataset
+	var phase conf.RunPhase
+	var input conf.InputDataset
 
 	if *phaseF == "WPS" {
-		phase = WPSPhase
+		phase = conf.WPSPhase
 	} else if *phaseF == "DA" {
-		phase = DAPhase
+		phase = conf.DAPhase
 	} else if *phaseF == "WPSDA" {
-		phase = WPSThenDAPhase
+		phase = conf.WPSThenDAPhase
 	} else {
 		log.Fatalf("%s\nUnknown phase `%s`", usage, *phaseF)
 	}
 
 	if *inputF == "GFS" {
-		input = GFS
+		input = conf.GFS
 	} else if *inputF == "IFS" {
-		input = IFS
+		input = conf.IFS
 	} else {
 		log.Fatalf("%s\nUnknown input dataset `%s`", usage, *phaseF)
 	}
@@ -579,13 +585,26 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
 	workdir := vpath.New("localhost", absWd)
-	conf.Init(workdir.Join("wrfda-runner.cfg"))
+	folders.Root = workdir
+	cfgFile := workdir.Join("wrfda-runner.cfg")
+
+	err = vsConfig.Init(cfgFile.Path)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	err = conf.Init(cfgFile)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	folders.Cfg = conf.Config.Folders
 
 	wrfdaPrg = conf.Config.Folders.WRFDAPrg
 	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
 	wrfPrgMainRun = conf.Config.Folders.WRFMainRunPrg
-	wpsPrg = conf.Config.Folders.WPSPrg
 	matrixDir = conf.Config.Folders.CovarMatrixesDir
 
 	/*vs.LogF(
@@ -595,22 +614,22 @@ func main() {
 	)
 	*/
 
+	vs := ctx.Context{}
+	domainCount, err := readDomainCount(&vs, phase)
+
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
-		vs := ctx.Context{}
-		domainCount, err := readDomainCount(&vs, phase)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
 
 		vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
-		if !vs.Exists(vpath.New("localhost", ".")) {
+		if !vs.Exists(workdir) {
 			log.Fatalf("Directory not found: %s", workdir.String())
 		}
-		buildWRFDAWorkdir(&vs, phase, dt)
+		buildWorkdirForDate(&vs, phase, dt)
 		if vs.Err != nil {
 			log.Fatal(vs.Err)
 		}
-		vs = ctx.Context{}
 		runWRFDA(&vs, phase, dt, input, domainCount)
 		if vs.Err != nil {
 			log.Fatal(vs.Err)
