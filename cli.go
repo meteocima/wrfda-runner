@@ -26,9 +26,9 @@ var wrfPrgMainRun vpath.VirtualPath
 var wpsPrg vpath.VirtualPath
 var matrixDir vpath.VirtualPath
 
-var wpsDir = vpath.New("timoteo", "wps")
-var inputsDir = vpath.New("timoteo", "../inputs")
-var observationsDir = vpath.New("timoteo", "../observations")
+var wpsDir = vpath.New("localhost", "wps")
+var inputsDir = vpath.New("localhost", "../inputs")
+var observationsDir = vpath.New("localhost", "../observations")
 
 var geogridProcCount = "84"
 var metgridProcCount = "84"
@@ -171,13 +171,13 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 		nameListName = "namelist.run.wrf"
 	}
 
-	wrfDir := vpath.New("timoteo", "wrf%02d", dtStart.Hour())
+	wrfDir := vpath.New("localhost", "wrf%02d", dtStart.Hour())
 
 	vs.MkDir(wrfDir)
 
 	// boundary from same cycle da dir for domain 1
 
-	daBdy := vpath.New("timoteo", "da%02d_d01/wrfbdy_d01", dtStart.Hour())
+	daBdy := vpath.New("localhost", "da%02d_d01/wrfbdy_d01", dtStart.Hour())
 	vs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
 
 	// build namelist for wrf
@@ -218,7 +218,7 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 
 	// prev da results
 	for domain := 1; domain <= domainCount; domain++ {
-		daDir := vpath.New("timoteo", "../da%02d_d%02d", dtStart.Hour(), domain)
+		daDir := vpath.New("localhost", "../da%02d_d%02d", dtStart.Hour(), domain)
 		vs.Link(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
 	}
 }
@@ -230,7 +230,7 @@ func buildDADirInDomain(vs *ctx.Context, phase runPhase, start, end time.Time, s
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 
 	// prepare da dir
-	daDir := vpath.New("timoteo", "da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := vpath.New("localhost", "da%02d_d%02d", assimDate.Hour(), domain)
 
 	vs.MkDir(daDir)
 
@@ -250,7 +250,7 @@ func buildDADirInDomain(vs *ctx.Context, phase runPhase, start, end time.Time, s
 			prevHour += 24
 		}
 
-		previousStep := vpath.New("timoteo", "wrf%02d", prevHour)
+		previousStep := vpath.New("localhost", "wrf%02d", prevHour)
 		vs.Copy(previousStep.Join("wrfvar_input_d%02d", domain), daDir.Join("fg"))
 	}
 
@@ -298,7 +298,7 @@ func runWRFStep(vs *ctx.Context, start time.Time, step int) {
 	vs.LogF("START WRF STEP %d\n", step)
 
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	wrfDir := vpath.New("timoteo", "wrf%02d", assimDate.Hour())
+	wrfDir := vpath.New("localhost", "wrf%02d", assimDate.Hour())
 
 	vs.Run(wrfDir.Join("mpirun"), []string{"-n", wrfstepProcCount, "./wrf.exe"},
 		connection.RunOptions{OutFromLog: wrfDir.Join("rsl.out.0000")})
@@ -314,7 +314,7 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 	vs.LogF("START DA STEP %d in DOMAIN %d\n", step, domain)
 
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-	daDir := vpath.New("timoteo", "da%02d_d%02d", assimDate.Hour(), domain)
+	daDir := vpath.New("localhost", "da%02d_d%02d", assimDate.Hour(), domain)
 
 	vs.Run(
 		daDir.Join("mpirun"),
@@ -402,7 +402,7 @@ func buildWRFDAWorkdir(vs *ctx.Context, phase runPhase, startDate time.Time) {
 	}
 
 	folders := conf.Config.Folders
-	workdir := vpath.New("timoteo", startDate.Format("20060102"))
+	workdir := vpath.New("localhost", startDate.Format("20060102"))
 
 	vs.MkDir(workdir)
 
@@ -497,7 +497,7 @@ const (
 	IFS
 )
 
-func readDomainCount(phase runPhase) (int, error) {
+func readDomainCount(vs *ctx.Context, phase runPhase) (int, error) {
 	nmlDir := conf.Config.Folders.NamelistsDir
 	namelistToReadMaxDom := "namelist.run.wrf"
 	if phase == WPSPhase || phase == WPSThenDAPhase {
@@ -579,15 +579,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	workdir := vpath.New("timoteo", absWd)
-	conf.Init(workdir.Join("wrfda-runner.cfg").String())
-
-	//fmt.Println("readDomainCount")
-	domainCount, err := readDomainCount(phase)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	//fmt.Println(domainCount, err)
+	workdir := vpath.New("localhost", absWd)
+	conf.Init(workdir.Join("wrfda-runner.cfg"))
 
 	wrfdaPrg = conf.Config.Folders.WRFDAPrg
 	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
@@ -604,8 +597,13 @@ func main() {
 
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
 		vs := ctx.Context{}
+		domainCount, err := readDomainCount(&vs, phase)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
 		vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
-		if !vs.Exists(vpath.New("timoteo", ".")) {
+		if !vs.Exists(vpath.New("localhost", ".")) {
 			log.Fatalf("Directory not found: %s", workdir.String())
 		}
 		buildWRFDAWorkdir(&vs, phase, dt)
