@@ -21,15 +21,10 @@ import (
 	"github.com/meteocima/virtual-server/connection"
 )
 
-var wrfdaPrg vpath.VirtualPath
-var wrfPrgStep vpath.VirtualPath
-var wrfPrgMainRun vpath.VirtualPath
-
-//var wpsPrg vpath.VirtualPath
-var matrixDir vpath.VirtualPath
-
-//var wpsDir = vpath.New("localhost", "wps")
-//var inputsDir = vpath.New("localhost", "../inputs")
+// var wrfdaPrg vpath.VirtualPath
+// var wrfPrgStep vpath.VirtualPath
+// var wrfPrgMainRun vpath.VirtualPath
+// var matrixDir vpath.VirtualPath
 var observationsDir = vpath.New("localhost", "../observations")
 
 var geogridProcCount = "84"
@@ -65,8 +60,11 @@ func buildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 	if vs.Err != nil {
 		return
 	}
+
 	wpsDir := folders.WPSWorkDir(start)
 	wpsPrg := folders.Cfg.WPSPrg
+	wrfPrgStep := folders.Cfg.WRFAssStepPrg
+
 	vs.MkDir(wpsDir)
 
 	// build namelist for wrf
@@ -168,7 +166,7 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 		return
 	}
 
-	wrfPrg := wrfPrgStep
+	wrfPrg := folders.Cfg.WRFAssStepPrg
 	nameListName := "namelist.step.wrf"
 
 	dtStart := start.Add(3 * time.Duration(step-3) * time.Hour)
@@ -176,7 +174,7 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 
 	if step == 3 {
 		dtEnd = end
-		wrfPrg = wrfPrgMainRun
+		wrfPrg = folders.Cfg.WRFMainRunPrg
 		nameListName = "namelist.run.wrf"
 	}
 
@@ -293,6 +291,9 @@ func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Ti
 			End:   end,
 		},
 	)
+
+	wrfdaPrg := folders.Cfg.WRFDAPrg
+	matrixDir := folders.Cfg.CovarMatrixesDir
 
 	// link files from WRFDA build directory
 	vs.Link(wrfdaPrg.Join("var/build/da_wrfvar.exe"), daDir.Join("da_wrfvar.exe"))
@@ -604,11 +605,6 @@ func main() {
 	}
 
 	folders.Cfg = conf.Config.Folders
-
-	wrfdaPrg = conf.Config.Folders.WRFDAPrg
-	wrfPrgStep = conf.Config.Folders.WRFAssStepPrg
-	wrfPrgMainRun = conf.Config.Folders.WRFMainRunPrg
-	matrixDir = conf.Config.Folders.CovarMatrixesDir
 
 	/*vs.LogF(
 		"RUN FOR DATES FROM %s TO %s\n",
