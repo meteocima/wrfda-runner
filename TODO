@@ -1,3 +1,4 @@
 * fare in modo che venga presa la stagione giusta
     per le matrici di covarianza
-* migliorare la gestione degli errori
+* vs: migliorare la gestione degli errori
+* vs: refactor API & docs
