@@ -10,6 +10,10 @@ import (
 var Root vpath.VirtualPath
 var Cfg conf.FoldersConf
 
+func InputsDir(startDate time.Time) vpath.VirtualPath {
+	return Root.Join("inputs/%s", startDate.Format("20060102"))
+}
+
 func WPSWorkDir(startDate time.Time) vpath.VirtualPath {
 	return WorkdirForDate(startDate).Join("wps")
 }

@@ -29,7 +29,7 @@ var wrfPrgMainRun vpath.VirtualPath
 var matrixDir vpath.VirtualPath
 
 //var wpsDir = vpath.New("localhost", "wps")
-var inputsDir = vpath.New("localhost", "../inputs")
+//var inputsDir = vpath.New("localhost", "../inputs")
 var observationsDir = vpath.New("localhost", "../observations")
 
 var geogridProcCount = "84"
@@ -246,7 +246,7 @@ func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Ti
 	if domain == 1 {
 		// domain 1 in every step of assimilation receives boundaries from WPS or from 'inputs' directory.
 		vs.Copy(
-			inputsDir.Join(start.Format("20060102")).Join("wrfbdy_d01_da%02d", step),
+			folders.InputsDir(start).Join("wrfbdy_d01_da%02d", step),
 			daDir.Join("wrfbdy_d01"),
 		)
 	}
@@ -254,7 +254,7 @@ func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Ti
 	if step == 1 {
 		// first step of assimilation receives fg input from WPS or from 'inputs' directory.
 		vs.Copy(
-			inputsDir.Join(start.Format("20060102")).Join("wrfinput_d%02d", domain),
+			folders.InputsDir(start).Join("wrfinput_d%02d", domain),
 			daDir.Join("fg"),
 		)
 	} else {
@@ -410,7 +410,7 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 		},
 	)
 
-	indir := inputsDir.Join(startDate.Format("20060102"))
+	indir := folders.InputsDir(startDate)
 	vs.MkDir(indir)
 
 	vs.Copy(wpsDir.Join("wrfbdy_d01"), indir.Join("wrfbdy_d01_da%02d", step))
@@ -421,7 +421,10 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 	}
 
 	for domain := 1; domain <= domainCount; domain++ {
-		vs.Copy(wpsDir.Join("wrfinput_d%02d", domain), indir.Join("wrfinput_d%02d", domain))
+		vs.Copy(
+			wpsDir.Join("wrfinput_d%02d", domain),
+			indir.Join("wrfinput_d%02d", domain),
+		)
 	}
 
 	vs.LogF("COMPLETED REAL\n")
