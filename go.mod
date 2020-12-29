@@ -1,4 +1,4 @@
-module github.com/meteocima/wrfassim
+module github.com/meteocima/wrfda-runner
 
 go 1.15
 
