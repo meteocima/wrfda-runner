@@ -1,9 +1,9 @@
 #!/bin/bash
 
-echo DA_WRFVAR
+
+echo THIS IS A FAKE DA_WRFVAR USED FOR TESTS > rsl.out.0000
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && basename `pwd` )"
 
-echo > rsl.out.0000
 
 IFS='_' read -r -a PARTS <<< "$DIR"
 CYCLE=${PARTS[0]}

@@ -1,3 +1,4 @@
 #!/bin/bash
 
-echo UNGRIB
+
+echo THIS IS A FAKE UNGRIB USED FOR TESTS

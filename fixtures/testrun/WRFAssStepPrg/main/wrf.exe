@@ -1,6 +1,6 @@
 #!/bin/bash
+echo THIS IS A FAKE WRF USED FOR  MIDDLE CYCLES TESTS > rsl.out.0000
 
-printf "%s\n" "WRF FOR MIDDLE CYCLES" > rsl.out.0000
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && basename `pwd` )"
 CYCLE=`echo $DIR | cut -c 4,5`
 
