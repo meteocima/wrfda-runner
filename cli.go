@@ -21,12 +21,6 @@ import (
 	"github.com/meteocima/virtual-server/connection"
 )
 
-// var wrfdaPrg vpath.VirtualPath
-// var wrfPrgStep vpath.VirtualPath
-// var wrfPrgMainRun vpath.VirtualPath
-// var matrixDir vpath.VirtualPath
-var observationsDir = vpath.New("localhost", "../observations")
-
 var geogridProcCount = "84"
 var metgridProcCount = "84"
 var wrfstepProcCount = "84"
@@ -305,9 +299,9 @@ func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Ti
 	vs.Link(matrixDir.Join("summer/be_2.5km_d%02d", domain), daDir.Join("be.dat"))
 
 	// link observations
-	assimDateS := assimDate.Format("2006010215")
-	vs.Link(observationsDir.Join("ob.radar.%s", assimDateS), daDir.Join("ob.radar"))
-	vs.Link(observationsDir.Join("ob.ascii.%s", assimDateS), daDir.Join("ob.ascii"))
+
+	vs.Link(folders.RadarObsForDate(assimDate, step), daDir.Join("ob.radar"))
+	vs.Link(folders.StationsObsForDate(assimDate, step), daDir.Join("ob.ascii"))
 }
 
 func runWRFStep(vs *ctx.Context, start time.Time, step int) {
