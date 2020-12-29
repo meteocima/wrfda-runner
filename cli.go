@@ -300,8 +300,8 @@ func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Ti
 
 	// link observations
 
-	vs.Link(folders.RadarObsForDate(assimDate, step), daDir.Join("ob.radar"))
-	vs.Link(folders.StationsObsForDate(assimDate, step), daDir.Join("ob.ascii"))
+	vs.Link(folders.RadarObsForDate(start, step), daDir.Join("ob.radar"))
+	vs.Link(folders.StationsObsForDate(start, step), daDir.Join("ob.ascii"))
 }
 
 func runWRFStep(vs *ctx.Context, start time.Time, step int) {
@@ -436,12 +436,12 @@ func buildWorkdirForDate(vs *ctx.Context, phase conf.RunPhase, startDate time.Ti
 
 	vs.MkDir(workdir)
 
-	vs.Link(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
-	//vs.Link(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
-	vs.Link(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
-	vs.Link(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
-	vs.Link(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
-	vs.Link(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
+	//vs.Link(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
+	////vs.Link(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
+	//vs.Link(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
+	//vs.Link(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
+	//vs.Link(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
+	//vs.Link(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
 
 	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
