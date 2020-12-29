@@ -436,12 +436,11 @@ func buildWorkdirForDate(vs *ctx.Context, phase conf.RunPhase, startDate time.Ti
 
 	vs.MkDir(workdir)
 
-	//vs.Link(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
-	////vs.Link(conf.Config.Folders.CovarMatrixesDir, workdir.Join("matrix"))
-	//vs.Link(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
-	//vs.Link(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
-	//vs.Link(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
-	//vs.Link(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
+	vs.Link(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
+	vs.Link(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
+	vs.Link(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
+	vs.Link(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
+	vs.Link(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
 
 	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
