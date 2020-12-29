@@ -11,8 +11,8 @@ import (
 	"time"
 
 	vsConfig "github.com/meteocima/virtual-server/config"
-	"github.com/meteocima/wrfassim/conf"
-	"github.com/meteocima/wrfassim/folders"
+	"github.com/meteocima/wrfda-runner/conf"
+	"github.com/meteocima/wrfda-runner/folders"
 
 	"github.com/meteocima/namelist-prepare/namelist"
 	"github.com/meteocima/virtual-server/ctx"
