@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo LINK_GRIB
+echo THIS IS A FAKE LINK_GRIB USED FOR TESTS

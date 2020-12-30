@@ -1,3 +1,3 @@
 #!/bin/bash
 
-echo DA_UPDATE_BC
+echo THIS IS A FAKE DA_UPDATE_BC USED FOR TESTS 
