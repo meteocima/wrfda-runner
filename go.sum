@@ -22,6 +22,8 @@ github.com/meteocima/namelist-prepare v1.0.0 h1:Fb2kgQIGqnEEpwbBBjbA+tHxcDnybTzz
 github.com/meteocima/namelist-prepare v1.0.0/go.mod h1:kpshsYkhy1esooJCgo+m4OOL8M/qCMdbKnGBaIcTi2U=
 github.com/meteocima/virtual-server v1.0.0 h1:nyekRra0BRIOgV+BXWvVvWMC/wfN3a5nLpiZ96rsqKQ=
 github.com/meteocima/virtual-server v1.0.0/go.mod h1:IIAUDC+MPRDhOajaO6wTVy86rVVIxqYu0XKWChfBGq0=
+github.com/meteocima/virtual-server v1.1.0 h1:iZ88d95zofvoa17QX+hJkG+1DqZRP9ITAEV8p1DVDN0=
+github.com/meteocima/virtual-server v1.1.0/go.mod h1:IIAUDC+MPRDhOajaO6wTVy86rVVIxqYu0XKWChfBGq0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/sftp v1.12.0 h1:/f3b24xrDhkhddlaobPe2JgBqfdt+gC/NYl0QY9IOuI=
