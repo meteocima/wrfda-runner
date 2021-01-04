@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 	"path/filepath"
 
 	"time"
@@ -62,6 +63,14 @@ func main() {
 	}
 
 	wd := vpath.Local(absWd)
-	runner.Init(wd)
-	runner.Run(startDate, endDate, wd, phase, input)
+	cfgFile := wd.Join("wrfda-runner.cfg")
+
+	err := runner.Init(cfgFile, wd)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	err = runner.Run(startDate, endDate, wd, phase, input, os.Stdout, os.Stderr)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

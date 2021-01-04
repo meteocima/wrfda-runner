@@ -2,7 +2,7 @@ package runner
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +21,7 @@ import (
 		"github.com/meteocima/virtual-server/connection"
 	*/)
 
-func readDomainCount(vs *ctx.Context, phase conf.RunPhase) (int, error) {
+func readDomainCount(vs *ctx.Context, phase conf.RunPhase) int {
 	nmlDir := conf.Config.Folders.NamelistsDir
 	namelistToReadMaxDom := "namelist.run.wrf"
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
@@ -39,62 +39,83 @@ func readDomainCount(vs *ctx.Context, phase conf.RunPhase) (int, error) {
 		if strings.HasPrefix(trimdLine, "max_dom") {
 			fields := strings.Split(trimdLine, "=")
 			if len(fields) < 2 {
-				return 0, fmt.Errorf("Malformed max_dom property in `%s`: %s", fileName.String(), trimdLine)
+				vs.Err = fmt.Errorf("Malformed max_dom property in `%s`: %s", fileName.String(), trimdLine)
+				return 0
 			}
 			valueS := strings.Trim(fields[1], " \t,")
 			value, err := strconv.Atoi(valueS)
 			if err != nil {
-				return 0, fmt.Errorf("Cannot convert max_dom `%s` to integer: %w", valueS, err)
+				vs.Err = fmt.Errorf("Cannot convert max_dom `%s` to integer: %w", valueS, err)
+				return 0
 			}
-			return value, nil
+			return value
 		}
 	}
 
-	return 0, fmt.Errorf("max_dom property not found in %s", fileName)
+	vs.Err = fmt.Errorf("max_dom property not found in %s", fileName)
+	return 0
 }
 
-func Init(workdir vpath.VirtualPath) {
+// Init ...
+func Init(cfgFile, workdir vpath.VirtualPath) error {
 	folders.Root = workdir
-	cfgFile := workdir.Join("wrfda-runner.cfg")
 
 	err := vsConfig.Init(cfgFile.Path)
 	if err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
 
 	err = conf.Init(cfgFile)
 	if err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
 
 	folders.Cfg = conf.Config.Folders
-
+	return nil
 }
 
-func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.RunPhase, input conf.InputDataset) {
-
-	vs := ctx.Context{}
-	domainCount, err := readDomainCount(&vs, phase)
-	if err != nil {
-		log.Fatal(err.Error())
+// RemoveRunFolder ...
+func RemoveRunFolder(startDate time.Time, workdir vpath.VirtualPath, logWriter io.Writer, detailLogWriter io.Writer) error {
+	vs := ctx.Context{
+		Log:       logWriter,
+		DetailLog: detailLogWriter,
 	}
+
+	dtWorkdir := folders.WorkdirForDate(startDate)
+
+	if vs.Exists(dtWorkdir) {
+		vs.RmDir(dtWorkdir)
+	}
+
+	return vs.Err
+}
+
+// Run ...
+func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.RunPhase, input conf.InputDataset,
+	logWriter io.Writer, detailLogWriter io.Writer,
+) error {
+	vs := ctx.Context{
+		Log:       logWriter,
+		DetailLog: detailLogWriter,
+	}
+
+	if !vs.Exists(workdir) {
+		return fmt.Errorf("Directory not found: %s", workdir.String())
+	}
+
+	domainCount := readDomainCount(&vs, phase)
 
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
 		vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
-		if !vs.Exists(workdir) {
-			log.Fatalf("Directory not found: %s", workdir.String())
-		}
-		buildWorkdirForDate(&vs, phase, dt)
-		if vs.Err != nil {
-			log.Fatal(vs.Err)
-		}
-		runWRFDA(&vs, phase, dt, input, domainCount)
-		if vs.Err != nil {
-			log.Fatal(vs.Err)
-		}
 
-		vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
+		buildWorkdirForDate(&vs, phase, dt)
+		runWRFDA(&vs, phase, dt, input, domainCount)
+		if vs.Err == nil {
+			vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
+		}
 	}
+
+	return vs.Err
 }
 
 func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate time.Time, ds conf.InputDataset, domainCount int) {
