@@ -29,10 +29,6 @@ func DAWorkDir(startDate time.Time, domain, cycle int) vpath.VirtualPath {
 	return WorkdirForDate(startDate).Join("da%02d_d%02d", assimDate.Hour(), domain)
 }
 
-func NamelistFile(source string) vpath.VirtualPath {
-	return Cfg.NamelistsDir.Join(source)
-}
-
 func DAWorkdir(phase conf.RunPhase, startDate time.Time) vpath.VirtualPath {
 	return vpath.FromS("")
 }

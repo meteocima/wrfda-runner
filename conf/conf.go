@@ -6,8 +6,11 @@ package conf
 
 import (
 	"path"
+	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/meteocima/namelist-prepare/namelist"
+	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/vpath"
 )
 
@@ -78,4 +81,25 @@ func Init(confFile vpath.VirtualPath) error {
 	}
 	//fmt.Println(Config.Folders)
 	return err
+}
+
+func NamelistFile(source string) vpath.VirtualPath {
+	return Config.Folders.NamelistsDir.Join(source)
+}
+
+func RenderNameList(vs *ctx.Context, source string, target vpath.VirtualPath, args namelist.Args) {
+	if vs.Err != nil {
+		return
+	}
+
+	tmplFile := vs.ReadString(NamelistFile(source))
+
+	args.Hours = int(args.End.Sub(args.Start).Hours())
+
+	tmpl := namelist.Tmpl{}
+	tmpl.ReadTemplateFrom(strings.NewReader(tmplFile))
+
+	var renderedNamelist strings.Builder
+	tmpl.RenderTo(args, &renderedNamelist)
+	vs.WriteString(target, renderedNamelist.String())
 }

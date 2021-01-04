@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && basename `pwd` )"
 echo THIS IS A FAKE REAL USED FOR TESTS > rsl.out.0000
