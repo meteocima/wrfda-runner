@@ -65,7 +65,7 @@ func main() {
 	wd := vpath.Local(absWd)
 	cfgFile := wd.Join("wrfda-runner.cfg")
 
-	err := runner.Init(cfgFile, wd)
+	err = runner.Init(cfgFile, wd)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
