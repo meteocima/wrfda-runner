@@ -8,4 +8,4 @@ require (
 	github.com/meteocima/virtual-server v1.4.0
 )
 
-replace github.com/meteocima/virtual-server => /home/parroit/Desktop/cimarepos/virtual-server
+replace github.com/meteocima/virtual-server => ../virtual-server
