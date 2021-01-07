@@ -18,9 +18,9 @@ func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Ti
 		return
 	}
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
-
 	// prepare da dir
 	daDir := folders.DAWorkDir(start, domain, step)
+	defer vs.SetTask("build wrfda work dir for cycle %d, domain %d on `%s`", step, domain, daDir.String())()
 
 	vs.MkDir(daDir)
 
@@ -97,8 +97,7 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 	if vs.Err != nil {
 		return
 	}
-
-	vs.LogF("START DA STEP %d in DOMAIN %d\n", step, domain)
+	defer vs.SetTask("run wrfda for cycle %d, domain %d", step, domain)()
 
 	daDir := folders.DAWorkDir(start, domain, step)
 
@@ -116,8 +115,6 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 			Cwd: daDir,
 		})
 	}
-
-	vs.LogF("COMPLETED DA STEP %d in DOMAIN %d\n", step, domain)
 }
 
 func runDAStep(vs *ctx.Context, start time.Time, step int, domainCount int) {

@@ -106,12 +106,12 @@ func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.Run
 	domainCount := readDomainCount(&vs, phase)
 
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
-		vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
+		//vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
 
 		buildWorkdirForDate(&vs, phase, dt)
 		runWRFDA(&vs, phase, dt, input, domainCount)
 		if vs.Err == nil {
-			vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
+			//vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
 		}
 	}
 
