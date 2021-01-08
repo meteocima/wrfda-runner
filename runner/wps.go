@@ -36,7 +36,7 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 	}
 	wpsDir := folders.WPSWorkDir(startDate)
 
-	vs.LogF("START REAL\n")
+	defer vs.SetTask("real for cycle %d", step)()
 
 	vs.Exec(
 		vpath.New("localhost", "mpirun"),
@@ -53,7 +53,6 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 	vs.Copy(wpsDir.Join("wrfbdy_d01"), indir.Join("wrfbdy_d01_da%02d", step))
 
 	if step != 1 {
-		vs.LogF("COMPLETED REAL\n")
 		return
 	}
 
@@ -64,16 +63,14 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 		)
 	}
 
-	vs.LogF("COMPLETED REAL\n")
-
 }
 
 func buildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 	if vs.Err != nil {
 		return
 	}
-
 	wpsDir := folders.WPSWorkDir(start)
+	defer vs.SetTask("Build WPS work directory on `%s`", wpsDir.String())()
 	wpsPrg := folders.Cfg.WPSPrg
 	wrfPrgStep := folders.Cfg.WRFAssStepPrg
 
@@ -109,10 +106,10 @@ func runWPS(vs *ctx.Context, start, end time.Time) {
 		return
 	}
 
-	vs.LogF("START WPS\n")
+	defer vs.SetTask("WPS pre-process for date %s", start.Format("2006020115"))()
+
 	wpsDir := folders.WPSWorkDir(start)
 
-	vs.LogF("Running geogrid")
 	vs.Exec(
 		vpath.New("localhost", "mpirun"),
 		[]string{"-n", common.GeogridProcCount, "./geogrid.exe"},
@@ -121,40 +118,24 @@ func runWPS(vs *ctx.Context, start, end time.Time) {
 			Cwd:        wpsDir,
 		},
 	)
-	if vs.Err != nil {
-		return
-	}
 
-	vs.LogF("Running linkgrib ../gfs/*")
 	vs.Exec(wpsDir.Join("./link_grib.csh"), []string{"../gfs/*"}, connection.RunOptions{
-
 		Cwd: wpsDir,
 	})
-	if vs.Err != nil {
-		return
-	}
 
-	vs.LogF("Running ungrib")
 	vs.Exec(wpsDir.Join("./ungrib.exe"), []string{}, connection.RunOptions{
 
 		Cwd: wpsDir,
 	})
-	if vs.Err != nil {
-		return
-	}
 
 	if end.Sub(start) > 24*time.Hour {
-		vs.LogF("Running avg_tsfc")
 		vs.Exec(wpsDir.Join("./avg_tsfc.exe"), []string{"../gfs/*"}, connection.RunOptions{
 
 			Cwd: wpsDir,
 		})
-		if vs.Err != nil {
-			return
-		}
+
 	}
 
-	vs.LogF("Running metgrid")
 	vs.Exec(
 		vpath.New("localhost", "mpirun"),
 		[]string{"-n", common.MetgridProcCount, "./metgrid.exe"},
@@ -163,11 +144,5 @@ func runWPS(vs *ctx.Context, start, end time.Time) {
 			Cwd:        wpsDir,
 		},
 	)
-
-	if vs.Err != nil {
-		return
-	}
-
-	vs.LogF("COMPLETED WPS\n")
 
 }
