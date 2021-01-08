@@ -183,7 +183,9 @@ func buildWorkdirForDate(vs *ctx.Context, phase conf.RunPhase, startDate time.Ti
 		// GFS
 		gfsSources := folders.GFSSources(startDate)
 		for _, gfsFile := range vs.ReadDir(gfsSources) {
-			vs.Copy(gfsFile, gfsDir.Join(gfsFile.Filename()))
+			if vs.IsFile(gfsFile) {
+				vs.Copy(gfsFile, gfsDir.Join(gfsFile.Filename()))
+			}
 		}
 	}
 
