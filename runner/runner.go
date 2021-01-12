@@ -76,10 +76,7 @@ func Init(cfgFile, workdir vpath.VirtualPath) error {
 
 // RemoveRunFolder ...
 func RemoveRunFolder(startDate time.Time, workdir vpath.VirtualPath, logWriter io.Writer, detailLogWriter io.Writer) error {
-	vs := ctx.Context{
-		Log:       logWriter,
-		DetailLog: detailLogWriter,
-	}
+	vs := ctx.New(logWriter, detailLogWriter)
 
 	dtWorkdir := folders.WorkdirForDate(startDate)
 
@@ -94,10 +91,7 @@ func RemoveRunFolder(startDate time.Time, workdir vpath.VirtualPath, logWriter i
 func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.RunPhase, input conf.InputDataset,
 	logWriter io.Writer, detailLogWriter io.Writer,
 ) error {
-	vs := ctx.Context{
-		Log:       logWriter,
-		DetailLog: detailLogWriter,
-	}
+	vs := ctx.New(logWriter, detailLogWriter)
 
 	if !vs.Exists(workdir) {
 		return fmt.Errorf("Directory not found: %s", workdir.String())

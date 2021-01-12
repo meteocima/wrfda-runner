@@ -17,7 +17,7 @@ func runWRFStep(vs *ctx.Context, start time.Time, step int) {
 		return
 	}
 
-	defer vs.SetTask("wrf cycle %d", step)()
+	vs.LogInfo("wrf cycle %d", step)
 
 	wrfDir := folders.WRFWorkDir(start, step)
 
@@ -35,7 +35,7 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 		return
 	}
 	wrfDir := folders.WRFWorkDir(start, step)
-	defer vs.SetTask("build wrf work dir for cycle %d on `%s`", step, wrfDir.String())()
+	vs.LogInfo("build wrf work dir for cycle %d on `%s`", step, wrfDir.String())
 
 	wrfPrg := folders.Cfg.WRFAssStepPrg
 	nameListName := "namelist.step.wrf"

@@ -36,7 +36,7 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 	}
 	wpsDir := folders.WPSWorkDir(startDate)
 
-	defer vs.SetTask("real for cycle %d", step)()
+	vs.LogInfo("real for cycle %d", step)
 
 	vs.Exec(
 		vpath.New("localhost", "mpirun"),
@@ -70,7 +70,7 @@ func buildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 		return
 	}
 	wpsDir := folders.WPSWorkDir(start)
-	defer vs.SetTask("Build WPS work directory on `%s`", wpsDir.String())()
+	vs.LogInfo("Build WPS work directory on `%s`", wpsDir.String())
 	wpsPrg := folders.Cfg.WPSPrg
 	wrfPrgStep := folders.Cfg.WRFAssStepPrg
 
@@ -106,7 +106,7 @@ func runWPS(vs *ctx.Context, start, end time.Time) {
 		return
 	}
 
-	defer vs.SetTask("WPS pre-process for date %s", start.Format("2006020115"))()
+	vs.LogInfo("WPS pre-process for date %s", start.Format("2006020115"))
 
 	wpsDir := folders.WPSWorkDir(start)
 
