@@ -21,9 +21,12 @@ import (
 		"github.com/meteocima/virtual-server/connection"
 	*/)
 
-func readDomainCount(vs *ctx.Context, phase conf.RunPhase) int {
+func ReadDomainCount(vs *ctx.Context, phase conf.RunPhase) int {
+	if vs.Err != nil {
+		return 0
+	}
 	nmlDir := conf.Config.Folders.NamelistsDir
-	namelistToReadMaxDom := "namelist.run.wrf"
+	namelistToReadMaxDom := "namelist.step.wrf"
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		namelistToReadMaxDom = "namelist.wps"
 	}
@@ -97,12 +100,12 @@ func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.Run
 		return fmt.Errorf("Directory not found: %s", workdir.String())
 	}
 
-	domainCount := readDomainCount(&vs, phase)
+	domainCount := ReadDomainCount(&vs, phase)
 
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
 		//vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
 
-		buildWorkdirForDate(&vs, phase, dt)
+		BuildWorkdirForDate(&vs, phase, dt)
 		runWRFDA(&vs, phase, dt, input, domainCount)
 		if vs.Err == nil {
 			//vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
@@ -120,21 +123,21 @@ func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate time.Time, ds conf
 	endDate := startDate.Add(42 * time.Hour)
 
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
-		buildWPSDir(vs, startDate, endDate, ds)
-		runWPS(vs, startDate, endDate)
-		for step := 1; step <= 3; step++ {
-			buildNamelistForReal(vs, startDate, endDate, step)
-			runReal(vs, startDate, step, domainCount)
+		BuildWPSDir(vs, startDate, endDate, ds)
+		RunWPS(vs, startDate, endDate)
+		for cycle := 1; cycle <= 3; cycle++ {
+			BuildNamelistForReal(vs, startDate, endDate, cycle)
+			RunReal(vs, startDate, cycle, phase)
 		}
 	}
 
 	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
-		for step := 1; step <= 3; step++ {
-			buildDAStepDir(vs, phase, startDate, endDate, step, domainCount)
-			runDAStep(vs, startDate, step, domainCount)
+		for cycle := 1; cycle <= 3; cycle++ {
+			BuildDAStepDir(vs, startDate, endDate, cycle)
+			RunDAStep(vs, startDate, cycle)
 
-			buildWRFDir(vs, startDate, endDate, step, domainCount)
-			runWRFStep(vs, startDate, step)
+			BuildWRFDir(vs, startDate, endDate, cycle)
+			RunWRFStep(vs, startDate, cycle)
 		}
 	}
 }
@@ -151,7 +154,7 @@ func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
 	)
 }
 
-func buildWorkdirForDate(vs *ctx.Context, phase conf.RunPhase, startDate time.Time) {
+func BuildWorkdirForDate(vs *ctx.Context, phase conf.RunPhase, startDate time.Time) {
 	if vs.Err != nil {
 		return
 	}

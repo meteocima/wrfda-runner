@@ -13,7 +13,7 @@ import (
 	"github.com/meteocima/wrfda-runner/folders"
 )
 
-func buildDADirInDomain(vs *ctx.Context, phase conf.RunPhase, start, end time.Time, step, domain int) {
+func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int) {
 	if vs.Err != nil {
 		return
 	}
@@ -117,23 +117,24 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 	}
 }
 
-func runDAStep(vs *ctx.Context, start time.Time, step int, domainCount int) {
+func RunDAStep(vs *ctx.Context, start time.Time, step int) {
 	if vs.Err != nil {
 		return
 	}
-
+	domainCount := ReadDomainCount(vs, conf.DAPhase)
 	for domain := 1; domain <= domainCount; domain++ {
 		runDAStepInDomain(vs, start, step, domain)
 	}
 }
 
-func buildDAStepDir(vs *ctx.Context, phase conf.RunPhase, start, end time.Time, step int, domainCount int) {
+func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int) {
 	if vs.Err != nil {
 		return
 	}
+	domainCount := ReadDomainCount(vs, conf.DAPhase)
 
 	for domain := 1; domain <= domainCount; domain++ {
-		buildDADirInDomain(vs, phase, start, end, step, domain)
+		buildDADirInDomain(vs, start, end, step, domain)
 	}
 
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/meteocima/wrfda-runner/folders"
 )
 
-func runWRFStep(vs *ctx.Context, start time.Time, step int) {
+func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 	if vs.Err != nil {
 		return
 	}
@@ -30,7 +30,7 @@ func runWRFStep(vs *ctx.Context, start time.Time, step int) {
 	)
 
 }
-func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount int) {
+func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int) {
 	if vs.Err != nil {
 		return
 	}
@@ -91,6 +91,8 @@ func buildWRFDir(vs *ctx.Context, start, end time.Time, step int, domainCount in
 	vs.Link(wrfPrg.Join("run/VEGPARM.TBL"), wrfDir.Join("VEGPARM.TBL"))
 	vs.Link(wrfPrg.Join("run/SOILPARM.TBL"), wrfDir.Join("SOILPARM.TBL"))
 	vs.Link(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
+
+	domainCount := ReadDomainCount(vs, conf.DAPhase)
 
 	// prev da results
 	for domain := 1; domain <= domainCount; domain++ {

@@ -14,7 +14,7 @@ import (
 	"github.com/meteocima/virtual-server/connection"
 )
 
-func buildNamelistForReal(vs *ctx.Context, start, end time.Time, step int) {
+func BuildNamelistForReal(vs *ctx.Context, start, end time.Time, step int) {
 	assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 	wpsDir := folders.WPSWorkDir(start)
 
@@ -30,7 +30,9 @@ func buildNamelistForReal(vs *ctx.Context, start, end time.Time, step int) {
 	)
 }
 
-func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
+// RunReal ...
+func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase) {
+	domainCount := ReadDomainCount(vs, phase)
 	if vs.Err != nil {
 		return
 	}
@@ -65,7 +67,7 @@ func runReal(vs *ctx.Context, startDate time.Time, step int, domainCount int) {
 
 }
 
-func buildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
+func BuildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 	if vs.Err != nil {
 		return
 	}
@@ -101,7 +103,7 @@ func buildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 	}
 }
 
-func runWPS(vs *ctx.Context, start, end time.Time) {
+func RunWPS(vs *ctx.Context, start, end time.Time) {
 	if vs.Err != nil {
 		return
 	}
@@ -146,3 +148,34 @@ func runWPS(vs *ctx.Context, start, end time.Time) {
 	)
 
 }
+
+/*
+// NewWpsTask ...
+func NewWpsTask(startDate time.Time) *WpsTask {
+	dtPart := startDate.Format("200602011504")
+	tskID := FindTaskID(fmt.Sprintf("wps-%s", dtPart))
+	tsk := &WpsTask{
+		SimpleTask: SimpleTask{
+			id:          tskID,
+			description: fmt.Sprintf("WPS preprocessing for date `%s`:%s", dtPart, tskID),
+		},
+		startDate: startDate,
+	}
+
+	tsk.infoLog = OpenTaskLog(tsk.InfoLogFilePath())
+	tsk.detailedLog = OpenTaskLog(tsk.DetailedLogFilePath())
+
+	tasks[tskID] = tsk
+	return tsk
+}
+
+// Run ...
+func (tsk *WpsTask) Run() error {
+	err := runner.RemoveRunFolder(tsk.startDate, conf.Workdir, tsk.infoLog, tsk.infoLog)
+	if err != nil {
+		return err
+	}
+
+	return runner.Run(tsk.startDate, tsk.startDate, conf.Workdir, runnerConf.WPSPhase, runnerConf.GFS, tsk.infoLog, tsk.detailedLog)
+}
+*/
