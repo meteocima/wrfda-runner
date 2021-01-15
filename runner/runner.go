@@ -100,13 +100,13 @@ func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.Run
 		return fmt.Errorf("Directory not found: %s", workdir.String())
 	}
 
-	domainCount := ReadDomainCount(&vs, phase)
+	domainCount := ReadDomainCount(vs, phase)
 
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
 		//vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
 
-		BuildWorkdirForDate(&vs, phase, dt)
-		runWRFDA(&vs, phase, dt, input, domainCount)
+		BuildWorkdirForDate(vs, phase, dt)
+		runWRFDA(vs, phase, dt, input, domainCount)
 		if vs.Err == nil {
 			//vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
 		}
