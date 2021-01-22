@@ -41,7 +41,7 @@ func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase
 	vs.LogInfo("real for cycle %d", step)
 
 	vs.Exec(
-		vpath.New("localhost", "mpirun"),
+		vpath.New("simulation", "mpirun"),
 		[]string{"-n", common.RealProcCount, "./real.exe"},
 		connection.RunOptions{
 			OutFromLog: wpsDir.Join("rsl.out.0000"),
