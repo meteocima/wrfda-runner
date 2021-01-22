@@ -113,7 +113,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 	wpsDir := folders.WPSWorkDir(start)
 
 	vs.Exec(
-		vpath.New("localhost", "mpirun"),
+		vpath.New("simulation", "mpirun"),
 		[]string{"-n", common.GeogridProcCount, "./geogrid.exe"},
 		connection.RunOptions{
 			OutFromLog: wpsDir.Join("geogrid.log.0000"),
@@ -139,7 +139,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 	}
 
 	vs.Exec(
-		vpath.New("localhost", "mpirun"),
+		vpath.New("simulation", "mpirun"),
 		[]string{"-n", common.MetgridProcCount, "./metgrid.exe"},
 		connection.RunOptions{
 			OutFromLog: wpsDir.Join("metgrid.log.0000"),
@@ -148,34 +148,3 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 	)
 
 }
-
-/*
-// NewWpsTask ...
-func NewWpsTask(startDate time.Time) *WpsTask {
-	dtPart := startDate.Format("200602011504")
-	tskID := FindTaskID(fmt.Sprintf("wps-%s", dtPart))
-	tsk := &WpsTask{
-		SimpleTask: SimpleTask{
-			id:          tskID,
-			description: fmt.Sprintf("WPS preprocessing for date `%s`:%s", dtPart, tskID),
-		},
-		startDate: startDate,
-	}
-
-	tsk.infoLog = OpenTaskLog(tsk.InfoLogFilePath())
-	tsk.detailedLog = OpenTaskLog(tsk.DetailedLogFilePath())
-
-	tasks[tskID] = tsk
-	return tsk
-}
-
-// Run ...
-func (tsk *WpsTask) Run() error {
-	err := runner.RemoveRunFolder(tsk.startDate, conf.Workdir, tsk.infoLog, tsk.infoLog)
-	if err != nil {
-		return err
-	}
-
-	return runner.Run(tsk.startDate, tsk.startDate, conf.Workdir, runnerConf.WPSPhase, runnerConf.GFS, tsk.infoLog, tsk.detailedLog)
-}
-*/

@@ -15,7 +15,8 @@ func InputsDir(startDate time.Time) vpath.VirtualPath {
 }
 
 func WPSWorkDir(startDate time.Time) vpath.VirtualPath {
-	return WorkdirForDate(startDate).Join("wps")
+	localPath := WorkdirForDate(startDate).Join("wps")
+	return vpath.New("simulation", localPath.Path)
 }
 
 func WRFWorkDir(start time.Time, cycle int) vpath.VirtualPath {
