@@ -105,7 +105,8 @@ func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.Run
 	for dt := startDate; dt.Unix() <= endDate.Unix(); dt = dt.Add(time.Hour * 24) {
 		//vs.LogF("STARTING RUN FOR DATE %s\n", dt.Format("2006010215"))
 
-		BuildWorkdirForDate(vs, phase, dt)
+		workdir := folders.WorkdirForDate(startDate)
+		BuildWorkdirForDate(vs, workdir, phase, dt)
 		runWRFDA(vs, phase, dt, input, domainCount)
 		if vs.Err == nil {
 			//vs.LogF("RUN FOR DATE %s COMPLETED\n", dt.Format("2006010215"))
@@ -154,13 +155,10 @@ func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
 	)
 }
 
-func BuildWorkdirForDate(vs *ctx.Context, phase conf.RunPhase, startDate time.Time) {
+func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.RunPhase, startDate time.Time) {
 	if vs.Err != nil {
 		return
 	}
-
-	//folders := conf.Config.Folders
-	workdir := folders.WorkdirForDate(startDate)
 
 	vs.MkDir(workdir)
 

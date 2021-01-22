@@ -9,6 +9,7 @@ import (
 
 	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/tasks"
+	"github.com/meteocima/virtual-server/vpath"
 	"github.com/meteocima/wrfda-runner/folders"
 )
 
@@ -18,14 +19,19 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 
 	tskID := fmt.Sprintf("WPS-%s", dtPart)
 	tsk := tasks.New(tskID, func(vs *ctx.Context) error {
-		dtWorkdir := folders.WorkdirForDate(startDate)
 		wpsDir := folders.WPSWorkDir(startDate)
 		if vs.Exists(wpsDir) {
 			return fmt.Errorf("WPS working directory `%s` already exists", wpsDir)
 		}
 
-		if !vs.Exists(dtWorkdir) {
-			runner.BuildWorkdirForDate(vs, conf.WPSThenDAPhase, startDate)
+		workdirOnOrchestrator := folders.WorkdirForDate(startDate)
+		if !vs.Exists(workdirOnOrchestrator) {
+			runner.BuildWorkdirForDate(vs, workdirOnOrchestrator, conf.WPSThenDAPhase, startDate)
+		}
+
+		workdirOnSimulation := vpath.New("simulation", workdirOnOrchestrator.Path)
+		if !vs.Exists(workdirOnSimulation) {
+			runner.BuildWorkdirForDate(vs, workdirOnSimulation, conf.WPSThenDAPhase, startDate)
 		}
 
 		endDate := startDate.Add(48 * time.Hour)
