@@ -48,7 +48,8 @@ func GFSSources(startDate time.Time) vpath.VirtualPath {
 }
 
 func RadarObsForDate(startDate time.Time, cycle int) vpath.VirtualPath {
-	workdir := WorkdirForDate(startDate)
+	localPath := WorkdirForDate(startDate)
+	workdir := vpath.New("simulation", localPath.Path)
 	observationDir := workdir.Join("observations")
 
 	// dt is the date of the first cycle assimilation
@@ -57,7 +58,8 @@ func RadarObsForDate(startDate time.Time, cycle int) vpath.VirtualPath {
 }
 
 func StationsObsForDate(startDate time.Time, cycle int) vpath.VirtualPath {
-	workdir := WorkdirForDate(startDate)
+	localPath := WorkdirForDate(startDate)
+	workdir := vpath.New("simulation", localPath.Path)
 	observationDir := workdir.Join("observations")
 
 	// dt is the date of the first cycle assimilation
