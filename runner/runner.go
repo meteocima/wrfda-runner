@@ -120,7 +120,7 @@ func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate time.Time, ds conf
 		return
 	}
 
-	endDate := startDate.Add(42 * time.Hour)
+	endDate := startDate.Add(48 * time.Hour)
 
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		BuildWPSDir(vs, startDate, endDate, ds)
