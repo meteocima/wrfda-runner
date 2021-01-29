@@ -131,7 +131,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 	})
 
 	if end.Sub(start) > 24*time.Hour {
-		vs.Exec(wpsDir.Join("./avg_tsfc.exe"), []string{"../gfs/*"}, connection.RunOptions{
+		vs.Exec(wpsDir.Join("./avg_tsfc.exe"), []string{}, connection.RunOptions{
 
 			Cwd: wpsDir,
 		})
