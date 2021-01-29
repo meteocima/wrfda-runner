@@ -25,9 +25,9 @@ else
 fi
 
 WRFBDY=`cat wrfbdy_d01`
-if [[ $WRFBDY != "wrfbdy_d01 $START_HOUR--2020-12-26_18:00:00 wps" ]]; then
+if [[ $WRFBDY != "wrfbdy_d01 $START_HOUR--2020-12-27_00:00:00 wps" ]]; then
     printf "\n**********  WRF ERROR ****************\n" >> rsl.out.0000
-    printf "expecting bdy: wrfbdy_d01 $START_HOUR--2020-12-26_18:00:00 wps\n" >> rsl.out.0000
+    printf "expecting bdy: wrfbdy_d01 $START_HOUR--2020-12-27_00:00:00 wps\n" >> rsl.out.0000
     printf "actual bdy: $WRFBDY\n" >> rsl.out.0000
     printf "***********************************\n\n" >> rsl.out.0000
     exit 1
