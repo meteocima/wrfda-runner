@@ -21,11 +21,13 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 
 	wrfDir := folders.WRFWorkDir(start, step)
 
+	logFile := wrfDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New(wrfDir.Host, "mpirun"),
 		[]string{"-n", common.WrfstepProcCount, "./wrf.exe"},
-		connection.RunOptions{OutFromLog: wrfDir.Join("rsl.out.0000"),
-			Cwd: wrfDir,
+		&connection.RunOptions{
+			OutFromLog: &logFile,
+			Cwd:        wrfDir,
 		},
 	)
 

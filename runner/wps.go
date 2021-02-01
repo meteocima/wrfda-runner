@@ -40,11 +40,12 @@ func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase
 
 	vs.LogInfo("real for cycle %d", step)
 
+	logFile := wpsDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New("simulation", "mpirun"),
 		[]string{"-n", common.RealProcCount, "./real.exe"},
-		connection.RunOptions{
-			OutFromLog: wpsDir.Join("rsl.out.0000"),
+		&connection.RunOptions{
+			OutFromLog: &logFile,
 			Cwd:        wpsDir,
 		},
 	)
@@ -112,37 +113,38 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 
 	wpsDir := folders.WPSWorkDir(start)
 
+	logFile := wpsDir.Join("geogrid.log.0000")
 	vs.Exec(
 		vpath.New("simulation", "mpirun"),
 		[]string{"-n", common.GeogridProcCount, "./geogrid.exe"},
-		connection.RunOptions{
-			OutFromLog: wpsDir.Join("geogrid.log.0000"),
+		&connection.RunOptions{
+			OutFromLog: &logFile,
 			Cwd:        wpsDir,
 		},
 	)
 
-	vs.Exec(wpsDir.Join("./link_grib.csh"), []string{"../gfs/*"}, connection.RunOptions{
+	vs.Exec(wpsDir.Join("./link_grib.csh"), []string{"../gfs/*"}, &connection.RunOptions{
 		Cwd: wpsDir,
 	})
 
-	vs.Exec(wpsDir.Join("./ungrib.exe"), []string{}, connection.RunOptions{
-
+	vs.Exec(wpsDir.Join("./ungrib.exe"), []string{}, &connection.RunOptions{
 		Cwd: wpsDir,
 	})
 
 	if end.Sub(start) > 24*time.Hour {
-		vs.Exec(wpsDir.Join("./avg_tsfc.exe"), []string{}, connection.RunOptions{
+		vs.Exec(wpsDir.Join("./avg_tsfc.exe"), []string{}, &connection.RunOptions{
 
 			Cwd: wpsDir,
 		})
 
 	}
 
+	logFile2 := wpsDir.Join("metgrid.log.0000")
 	vs.Exec(
 		vpath.New("simulation", "mpirun"),
 		[]string{"-n", common.MetgridProcCount, "./metgrid.exe"},
-		connection.RunOptions{
-			OutFromLog: wpsDir.Join("metgrid.log.0000"),
+		&connection.RunOptions{
+			OutFromLog: &logFile2,
 			Cwd:        wpsDir,
 		},
 	)

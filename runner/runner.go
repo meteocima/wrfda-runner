@@ -21,6 +21,7 @@ import (
 		"github.com/meteocima/virtual-server/connection"
 	*/)
 
+// ReadDomainCount ...
 func ReadDomainCount(vs *ctx.Context, phase conf.RunPhase) int {
 	if vs.Err != nil {
 		return 0
@@ -155,6 +156,7 @@ func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
 	)
 }
 
+// BuildWorkdirForDate ...
 func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.RunPhase, startDate time.Time) {
 	if vs.Err != nil {
 		return

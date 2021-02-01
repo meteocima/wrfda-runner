@@ -101,17 +101,18 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 
 	daDir := folders.DAWorkDir(start, domain, step)
 
+	logFile := daDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New("localhost", "mpirun"),
 		[]string{"-n", common.WrfdaProcCount, "./da_wrfvar.exe"},
-		connection.RunOptions{
-			OutFromLog: daDir.Join("rsl.out.0000"),
+		&connection.RunOptions{
+			OutFromLog: &logFile,
 			Cwd:        daDir,
 		},
 	)
 
 	if domain == 1 {
-		vs.Exec(daDir.Join("./da_update_bc.exe"), []string{}, connection.RunOptions{
+		vs.Exec(daDir.Join("./da_update_bc.exe"), []string{}, &connection.RunOptions{
 			Cwd: daDir,
 		})
 	}
