@@ -118,6 +118,7 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 	}
 }
 
+// RunDAStep ...
 func RunDAStep(vs *ctx.Context, start time.Time, step int) {
 	if vs.Err != nil {
 		return
@@ -128,6 +129,7 @@ func RunDAStep(vs *ctx.Context, start time.Time, step int) {
 	}
 }
 
+// BuildDAStepDir ...
 func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int) {
 	if vs.Err != nil {
 		return

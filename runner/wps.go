@@ -14,6 +14,7 @@ import (
 	"github.com/meteocima/virtual-server/connection"
 )
 
+// BuildNamelistForReal ...
 func BuildNamelistForReal(vs *ctx.Context, start, end time.Time, step int) {
 	assimStartDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 	wpsDir := folders.WPSWorkDir(start)
@@ -68,6 +69,7 @@ func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase
 
 }
 
+// BuildWPSDir ..
 func BuildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 	if vs.Err != nil {
 		return
@@ -104,6 +106,7 @@ func BuildWPSDir(vs *ctx.Context, start, end time.Time, ds conf.InputDataset) {
 	}
 }
 
+// RunWPS ...
 func RunWPS(vs *ctx.Context, start, end time.Time) {
 	if vs.Err != nil {
 		return

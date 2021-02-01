@@ -12,6 +12,7 @@ import (
 	"github.com/meteocima/wrfda-runner/folders"
 )
 
+// RunWRFStep ...
 func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 	if vs.Err != nil {
 		return
@@ -32,6 +33,8 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 	)
 
 }
+
+// BuildWRFDir ...
 func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int) {
 	if vs.Err != nil {
 		return
