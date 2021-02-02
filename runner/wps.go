@@ -112,7 +112,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 		return
 	}
 
-	vs.LogInfo("WPS pre-process for date %s", start.Format("2006020115"))
+	vs.LogInfo("Start WPS pre-process for date %s", start.Format("2006020115"))
 
 	wpsDir := folders.WPSWorkDir(start)
 
