@@ -24,6 +24,8 @@ github.com/meteocima/virtual-server v1.0.0 h1:nyekRra0BRIOgV+BXWvVvWMC/wfN3a5nLp
 github.com/meteocima/virtual-server v1.0.0/go.mod h1:IIAUDC+MPRDhOajaO6wTVy86rVVIxqYu0XKWChfBGq0=
 github.com/meteocima/virtual-server v1.3.1 h1:TDWFcBEic1htin1zkLi0tuiXbk+1q9zN3SjyYyP5JsM=
 github.com/meteocima/virtual-server v1.3.1/go.mod h1:8yvTg8XKPI4FPGN6/9o5TDA1r13o8BVwfKSTXM8LOGI=
+github.com/mikkeloscar/sshconfig v0.0.0-20200912130257-f8464e2038cf h1:B/rGoO8folFrCHHjOVQlp88M/VQwAY1ASApvKMBS3EY=
+github.com/mikkeloscar/sshconfig v0.0.0-20200912130257-f8464e2038cf/go.mod h1:GvQCIGDpivPr+e8cuBt3c4+NTOJm66zpBrMjkit8jmw=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/sftp v1.12.0 h1:/f3b24xrDhkhddlaobPe2JgBqfdt+gC/NYl0QY9IOuI=
