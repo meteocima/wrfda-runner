@@ -145,6 +145,36 @@ func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate time.Time, ds conf
 	}
 }
 
+type StepType int
+
+const (
+	BuildDA StepType = iota
+	BuildWRF
+	RunDA
+	RunWRF
+)
+
+func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepType StepType, logWriter io.Writer, detailLogWriter io.Writer) {
+	endDate := startDate.Add(48 * time.Hour)
+	vs := ctx.New(os.Stdin, logWriter, detailLogWriter)
+	//domainCount := ReadDomainCount(vs, phase)
+
+	switch stepType {
+	case BuildDA:
+		BuildDAStepDir(vs, startDate, endDate, cycle)
+
+	case BuildWRF:
+		BuildWRFDir(vs, startDate, endDate, cycle)
+
+	case RunDA:
+		RunDAStep(vs, startDate, cycle)
+
+	case RunWRF:
+		RunWRFStep(vs, startDate, cycle)
+
+	}
+}
+
 func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
 	vs.Copy(
 		folders.RadarObsArchive(startDate, cycle),

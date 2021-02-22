@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"time"
 
@@ -18,6 +20,7 @@ func main() {
 	usage := "Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -p is WPSDA\ndefault for -i is GFS\n"
 
 	phaseF := flag.String("p", "WPSDA", "")
+	stepF := flag.String("s", "", "")
 	inputF := flag.String("i", "GFS", "")
 
 	flag.Parse()
@@ -69,8 +72,32 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	err = runner.Run(startDate, endDate, wd, phase, input, os.Stdout, os.Stderr)
-	if err != nil {
-		log.Fatal(err.Error())
+
+	if *stepF == "" {
+		err = runner.Run(startDate, endDate, wd, phase, input, os.Stdout, os.Stderr)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	} else {
+		parts := strings.Split(*stepF, "-")
+		cycleS := parts[0]
+		cycle, err := strconv.ParseInt(cycleS, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		var stepType runner.StepType
+		switch parts[1] {
+		case "BuildDA":
+			stepType = runner.BuildDA
+		case "BuildWRF":
+			stepType = runner.BuildWRF
+		case "RunDA":
+			stepType = runner.RunDA
+		case "RunWRF":
+			stepType = runner.RunWRF
+		default:
+			log.Fatalf("Unknown step type %s", parts[1])
+		}
+		runner.RunSingleStep(startDate, input, int(cycle), stepType, os.Stdout, os.Stderr)
 	}
 }
