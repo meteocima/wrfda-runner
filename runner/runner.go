@@ -171,7 +171,8 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 
 	case RunWRF:
 		RunWRFStep(vs, startDate, cycle)
-
+	default:
+		panic("unknwo steop type")
 	}
 }
 

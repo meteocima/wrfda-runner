@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/meteocima/namelist-prepare v1.0.0
 	github.com/meteocima/virtual-server v1.4.0
+	github.com/stretchr/testify v1.6.1
 )
 
 replace github.com/meteocima/virtual-server => ../virtual-server

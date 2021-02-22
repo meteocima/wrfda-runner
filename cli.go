@@ -47,17 +47,33 @@ func main() {
 	}
 
 	args := flag.Args()
-	if len(args) != 3 {
+	if len(args) < 1 {
 		log.Fatal(usage)
 	}
 
-	startDate, err := time.Parse("2006010215", args[1])
-	if err != nil {
-		log.Fatal(usage + err.Error() + "\n")
-	}
-	endDate, err := time.Parse("2006010215", args[2])
-	if err != nil {
-		log.Fatal(usage + err.Error() + "\n")
+	var err error
+	var dates []runner.TimePeriod
+	if len(args) == 1 {
+		dates, err = runner.ReadTimes("dates.txt")
+		if err != nil {
+			log.Fatal(err.Error() + "\n")
+		}
+
+	} else {
+		startDate, err := time.Parse("2006010215", args[1])
+		if err != nil {
+			log.Fatal(usage + err.Error() + "\n")
+		}
+		endDate, err := time.Parse("2006010215", args[2])
+		if err != nil {
+			log.Fatal(usage + err.Error() + "\n")
+		}
+		for dt := startDate; dt.Before(endDate) || dt.Equal(endDate); dt = dt.Add(24 * time.Hour) {
+			dates = append(dates, runner.TimePeriod{
+				Start:    dt,
+				Duration: 48,
+			})
+		}
 	}
 
 	absWd, err := filepath.Abs(args[0])
@@ -74,7 +90,7 @@ func main() {
 	}
 
 	if *stepF == "" {
-		err = runner.Run(startDate, endDate, wd, phase, input, os.Stdout, os.Stderr)
+		err = runner.Run(dates[0].Start, dates[0].Start.Add(24*time.Hour), wd, phase, input, os.Stdout, os.Stderr)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -98,6 +114,6 @@ func main() {
 		default:
 			log.Fatalf("Unknown step type %s", parts[1])
 		}
-		runner.RunSingleStep(startDate, input, int(cycle), stepType, os.Stdout, os.Stderr)
+		runner.RunSingleStep(dates[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
 	}
 }
