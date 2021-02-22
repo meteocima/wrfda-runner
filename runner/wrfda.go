@@ -2,6 +2,7 @@ package runner
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/meteocima/namelist-prepare/namelist"
@@ -124,9 +125,15 @@ func RunDAStep(vs *ctx.Context, start time.Time, step int) {
 		return
 	}
 	domainCount := ReadDomainCount(vs, conf.DAPhase)
+	allSteps := sync.WaitGroup{}
+	allSteps.Add(domainCount)
 	for domain := 1; domain <= domainCount; domain++ {
-		runDAStepInDomain(vs, start, step, domain)
+		go func(domain int) {
+			runDAStepInDomain(vs, start, step, domain)
+			allSteps.Done()
+		}(domain)
 	}
+	allSteps.Wait()
 }
 
 // BuildDAStepDir ...
