@@ -7,7 +7,7 @@ var GeogridProcCount = "84"
 var MetgridProcCount = "84"
 
 // WrfstepProcCount ...
-var WrfstepProcCount = "84"
+var WrfstepProcCount = "156"
 
 // WrfdaProcCount ...
 var WrfdaProcCount = "50"
