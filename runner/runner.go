@@ -13,14 +13,7 @@ import (
 	"github.com/meteocima/virtual-server/vpath"
 	"github.com/meteocima/wrfda-runner/conf"
 	"github.com/meteocima/wrfda-runner/folders"
-	/*
-
-		"github.com/meteocima/namelist-prepare/namelist"
-		"github.com/meteocima/virtual-server/ctx"
-		"github.com/meteocima/virtual-server/vpath"
-
-		"github.com/meteocima/virtual-server/connection"
-	*/)
+)
 
 // ReadDomainCount ...
 func ReadDomainCount(vs *ctx.Context, phase conf.RunPhase) int {
@@ -172,20 +165,20 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 	case RunWRF:
 		RunWRFStep(vs, startDate, cycle)
 	default:
-		panic("unknwo steop type")
+		panic("unknown step type")
 	}
 }
 
 func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
-	vs.Copy(
-		folders.RadarObsArchive(startDate, cycle),
-		folders.RadarObsForDate(startDate, cycle),
-	)
+	src := folders.RadarObsArchive(startDate, cycle)
+	dst := folders.RadarObsForDate(startDate, cycle)
+	fmt.Println(src, dst)
+	vs.Copy(src, dst)
 
-	vs.Copy(
-		folders.StationsObsArchive(startDate, cycle),
-		folders.StationsObsForDate(startDate, cycle),
-	)
+	src = folders.StationsObsArchive(startDate, cycle)
+	dst = folders.StationsObsForDate(startDate, cycle)
+	fmt.Println(src, dst)
+	vs.Copy(src, dst)
 }
 
 // BuildWorkdirForDate ...
