@@ -37,13 +37,13 @@ func ReadDomainCount(vs *ctx.Context, phase conf.RunPhase) int {
 		if strings.HasPrefix(trimdLine, "max_dom") {
 			fields := strings.Split(trimdLine, "=")
 			if len(fields) < 2 {
-				vs.Err = fmt.Errorf("Malformed max_dom property in `%s`: %s", fileName.String(), trimdLine)
+				vs.Err = fmt.Errorf("malformed max_dom property in `%s`: %s", fileName.String(), trimdLine)
 				return 0
 			}
 			valueS := strings.Trim(fields[1], " \t,")
 			value, err := strconv.Atoi(valueS)
 			if err != nil {
-				vs.Err = fmt.Errorf("Cannot convert max_dom `%s` to integer: %w", valueS, err)
+				vs.Err = fmt.Errorf("cannot convert max_dom `%s` to integer: %w", valueS, err)
 				return 0
 			}
 			return value
@@ -92,7 +92,7 @@ func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.Run
 	vs := ctx.New(os.Stdin, logWriter, detailLogWriter)
 
 	if !vs.Exists(workdir) {
-		return fmt.Errorf("Directory not found: %s", workdir.String())
+		return fmt.Errorf("directory not found: %s", workdir.String())
 	}
 
 	domainCount := ReadDomainCount(vs, phase)
