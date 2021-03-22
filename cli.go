@@ -17,7 +17,14 @@ import (
 )
 
 func main() {
-	usage := "Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] <workdir> <startdate> <enddate>\nformat for dates: YYYYMMDDHH\ndefault for -p is WPSDA\ndefault for -i is GFS\n"
+	usage := `
+Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] <workdir> [startdate enddate]
+format for dates: YYYYMMDDHH
+Note: if you omit startdate and enddate, they are read from an arguments.txt
+files that should be put in the workdir.
+default for -p is WPSDA
+default for -i is GFS
+`
 
 	phaseF := flag.String("p", "WPSDA", "")
 	stepF := flag.String("s", "", "")
@@ -54,7 +61,7 @@ func main() {
 	var err error
 	var dates []runner.TimePeriod
 	if len(args) == 1 {
-		dates, err = runner.ReadTimes("dates.txt")
+		dates, err = runner.ReadTimes("arguments.txt")
 		if err != nil {
 			log.Fatal(err.Error() + "\n")
 		}
