@@ -10,7 +10,7 @@ var MetgridProcCount = "84"
 var WrfstepProcCount = "132"
 
 // WrfdaProcCount ...
-var WrfdaProcCount = "46"
+var WrfdaProcCount = "42"
 
 // RealProcCount ...
-var RealProcCount = "36"
+var RealProcCount = "42"
