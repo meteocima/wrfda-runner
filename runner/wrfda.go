@@ -85,8 +85,22 @@ func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int)
 	vs.Link(wrfdaPrg.Join("run/LANDUSE.TBL"), daDir.Join("LANDUSE.TBL"))
 	vs.Link(wrfdaPrg.Join("var/build/da_update_bc.exe"), daDir.Join("da_update_bc.exe"))
 
+	var season string
+	// we use an approximation
+	// to calculate season
+	switch start.Month() {
+	case 12, 1, 2:
+		season = "winter"
+	case 3, 4, 5:
+		season = "spring"
+	case 6, 7, 8:
+		season = "summer"
+	case 9, 10, 11:
+		season = "fall"
+	}
+
 	// link covariance matrixes
-	vs.Link(matrixDir.Join("summer/be_2.5km_d%02d", domain), daDir.Join("be.dat"))
+	vs.Link(matrixDir.Join("%s/be_d%02d", season, domain), daDir.Join("be.dat"))
 
 	// link observations
 
