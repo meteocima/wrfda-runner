@@ -6,6 +6,7 @@ import (
 	"github.com/parro-it/fileargs"
 )
 
+// ReadTimes ...
 func ReadTimes(file string) (*fileargs.FileArguments, error) {
 	cwd, err := os.Getwd()
 	if err != nil {

@@ -137,15 +137,21 @@ func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate time.Time, ds conf
 	}
 }
 
+// StepType ...
 type StepType int
 
 const (
+	// BuildDA ...
 	BuildDA StepType = iota
+	// BuildWRF ...
 	BuildWRF
+	// RunDA ...
 	RunDA
+	// RunWRF ...
 	RunWRF
 )
 
+// RunSingleStep ...
 func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepType StepType, logWriter io.Writer, detailLogWriter io.Writer) {
 	endDate := startDate.Add(48 * time.Hour)
 	vs := ctx.New(os.Stdin, logWriter, detailLogWriter)
