@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,7 +22,7 @@ import (
 
 func main() {
 	usage := `
-Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] <workdir> [startdate enddate]
+Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] [-outargs <argsfile>] <workdir> [startdate enddate]
 format for dates: YYYYMMDDHH
 Note: if you omit startdate and enddate, they are read from an arguments.txt
 files that should be put in the workdir.
@@ -30,6 +33,7 @@ default for -i is GFS
 	phaseF := flag.String("p", "WPSDA", "")
 	stepF := flag.String("s", "", "")
 	inputF := flag.String("i", "GFS", "")
+	outArgsFileF := flag.String("outargs", "", "")
 
 	flag.Parse()
 
@@ -61,13 +65,26 @@ default for -i is GFS
 
 	var err error
 	var dates *fileargs.FileArguments
+	var cfgFile vpath.VirtualPath
+
+	absWd, err := filepath.Abs(args[0])
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	wd := vpath.Local(absWd)
+
 	if len(args) == 1 {
 		dates, err = runner.ReadTimes("arguments.txt")
 		if err != nil {
 			log.Fatal(err.Error() + "\n")
 		}
-
+		cfgFile = vpath.Local(dates.CfgPath)
 	} else {
+		dates = &fileargs.FileArguments{
+			Periods: []*fileargs.Period{},
+			CfgPath: "",
+		}
 		startDate, err := time.Parse("2006010215", args[1])
 		if err != nil {
 			log.Fatal(usage + err.Error() + "\n")
@@ -82,15 +99,24 @@ default for -i is GFS
 				Duration: 48,
 			})
 		}
+
+		cfgFile = wd.Join("wrfda-runner.cfg")
 	}
 
-	absWd, err := filepath.Abs(args[0])
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	if outArgsFileF != nil {
+		outargs := *outArgsFileF
+		var buf lineBuf
+		buf.AddLine(cfgFile.Path)
 
-	wd := vpath.Local(absWd)
-	cfgFile := wd.Join("wrfda-runner.cfg")
+		for _, p := range dates.Periods {
+			buf.AddLine(p.String())
+		}
+
+		err := buf.WriteTo(outargs)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
 
 	err = runner.Init(cfgFile, wd)
 	if err != nil {
@@ -124,4 +150,27 @@ default for -i is GFS
 		}
 		runner.RunSingleStep(dates.Periods[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
 	}
+}
+
+type lineBuf struct {
+	buf bytes.Buffer
+}
+
+func (lines *lineBuf) AddLine(lineFormat string, arguments ...interface{}) {
+	line := fmt.Sprintf(lineFormat, arguments...)
+	lines.buf.WriteString(line)
+	lines.buf.WriteRune('\n')
+}
+
+func (lines *lineBuf) WriteTo(filepath string) error {
+	f, err := os.OpenFile(filepath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fs.FileMode(0644))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Write(lines.buf.Bytes())
+	lines.buf.Truncate(0)
+
+	return err
 }

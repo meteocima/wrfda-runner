@@ -13,6 +13,8 @@
             "env": {},
             "cwd": "fixtures/testrun",
             "args": [
+                "-outargs",
+                "outargs.txt",
                 ".",
                 "2020122500",
                 "2020122500"
