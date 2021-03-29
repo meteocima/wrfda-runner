@@ -12,6 +12,7 @@ import (
 
 	"github.com/meteocima/wrfda-runner/conf"
 	"github.com/meteocima/wrfda-runner/runner"
+	"github.com/parro-it/fileargs"
 
 	"github.com/meteocima/virtual-server/vpath"
 )
@@ -59,7 +60,7 @@ default for -i is GFS
 	}
 
 	var err error
-	var dates []runner.TimePeriod
+	var dates *fileargs.FileArguments
 	if len(args) == 1 {
 		dates, err = runner.ReadTimes("arguments.txt")
 		if err != nil {
@@ -76,7 +77,7 @@ default for -i is GFS
 			log.Fatal(usage + err.Error() + "\n")
 		}
 		for dt := startDate; dt.Before(endDate) || dt.Equal(endDate); dt = dt.Add(24 * time.Hour) {
-			dates = append(dates, runner.TimePeriod{
+			dates.Periods = append(dates.Periods, &fileargs.Period{
 				Start:    dt,
 				Duration: 48,
 			})
@@ -97,7 +98,7 @@ default for -i is GFS
 	}
 
 	if *stepF == "" {
-		err = runner.Run(dates[0].Start, dates[0].Start.Add(24*time.Hour), wd, phase, input, os.Stdout, os.Stderr)
+		err = runner.Run(dates.Periods[0].Start, dates.Periods[0].Start.Add(24*time.Hour), wd, phase, input, os.Stdout, os.Stderr)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -121,6 +122,6 @@ default for -i is GFS
 		default:
 			log.Fatalf("Unknown step type %s", parts[1])
 		}
-		runner.RunSingleStep(dates[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
+		runner.RunSingleStep(dates.Periods[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
 	}
 }

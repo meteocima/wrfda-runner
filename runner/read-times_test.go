@@ -1,12 +1,14 @@
 package runner
 
 import (
+	"os"
 	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
 
+	"github.com/parro-it/fileargs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,39 +24,18 @@ func fixture(filePath string) string {
 }
 
 func TestMatchDownloadedData(t *testing.T) {
-	dateFile := fixture("dates.txt")
-	dates, err := ReadTimes(dateFile)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(dates))
-	assert.Equal(t, "2020112600", dates[0].Start.Format("2006010215"))
-	assert.Equal(t, "2020112700", dates[1].Start.Format("2006010215"))
-	assert.Equal(t, time.Hour*24, dates[0].Duration)
-	assert.Equal(t, time.Hour*48, dates[1].Duration)
-	assert.Equal(t, Italy, dates[0].Domain)
-	assert.Equal(t, France, dates[1].Domain)
 
-}
+	fsys := os.DirFS(fixture("."))
+	args, err := fileargs.ReadFile(fsys, "dates.txt")
+	if !assert.NoError(t, err) {
+		return
+	}
 
-func TestFileWrong(t *testing.T) {
-	dateFile := fixture("wrong.txt")
-	dates, err := ReadTimes(dateFile)
-	assert.Error(t, err)
-	assert.Equal(t, `
-Expected format for arguments.txt:  
-YYYYMMDDHH HOURS DOMAIN
-Cannot parse line
-2020112700 48`, err.Error())
-
-	assert.Nil(t, dates)
-
-}
-
-func TestFileWrong2(t *testing.T) {
-	dateFile := fixture("wrong2.txt")
-	dates, err := ReadTimes(dateFile)
-	assert.Error(t, err)
-	assert.Equal(t, `wrong domain code SP: expecting one of IT, FR`, err.Error())
-
-	assert.Nil(t, dates)
+	assert.Equal(t, 2, len(args.Periods))
+	assert.Equal(t, "2020112600", args.Periods[0].Start.Format("2006010215"))
+	assert.Equal(t, "2020112700", args.Periods[1].Start.Format("2006010215"))
+	assert.Equal(t, time.Hour*24, args.Periods[0].Duration)
+	assert.Equal(t, time.Hour*48, args.Periods[1].Duration)
+	assert.Equal(t, "wrfda-runner.cfg", args.CfgPath)
 
 }
