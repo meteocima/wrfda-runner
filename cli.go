@@ -106,7 +106,11 @@ default for -i is GFS
 	if outArgsFileF != nil {
 		outargs := *outArgsFileF
 		var buf lineBuf
-		buf.AddLine(cfgFile.Path)
+		if input == conf.GFS {
+			buf.AddLine("wrfda-runner.it.cfg")
+		} else {
+			buf.AddLine("wrfda-runner.fr.cfg")
+		}
 
 		for _, p := range dates.Periods {
 			buf.AddLine(p.String())
