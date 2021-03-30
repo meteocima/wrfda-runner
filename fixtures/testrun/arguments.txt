@@ -1,0 +1,2 @@
+wrfda-runner.cfg
+2020073100 48
