@@ -103,8 +103,9 @@ default for -i is GFS
 		cfgFile = wd.Join("wrfda-runner.cfg")
 	}
 
-	if outArgsFileF != nil {
+	if outArgsFileF != nil && *outArgsFileF != ""{
 		outargs := *outArgsFileF
+
 		var buf lineBuf
 		if input == conf.GFS {
 			buf.AddLine("wrfda-runner.it.cfg")

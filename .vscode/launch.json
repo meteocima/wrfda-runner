@@ -9,15 +9,13 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "/home/parroit/Desktop/cimarepos/wrfda-runner/cli.go",
+            "program": "/mnt/repos/cima/wrfda-runner/cli.go",
             "env": {},
             "cwd": "fixtures/testrun",
             "args": [
-                "-outargs",
-                "outargs.txt",
+                 "-p", "DA", "-i", "GFS",
                 ".",
-                "2020122500",
-                "2020122500"
+                
             ]
         }
     ]
