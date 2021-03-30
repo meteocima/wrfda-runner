@@ -96,7 +96,7 @@ default for -i is GFS
 		for dt := startDate; dt.Before(endDate) || dt.Equal(endDate); dt = dt.Add(24 * time.Hour) {
 			dates.Periods = append(dates.Periods, &fileargs.Period{
 				Start:    dt,
-				Duration: 48,
+				Duration: 48 * time.Hour,
 			})
 		}
 
