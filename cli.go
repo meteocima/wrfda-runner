@@ -79,6 +79,9 @@ default for -i is GFS
 		if err != nil {
 			log.Fatal(err.Error() + "\n")
 		}
+		if dates.CfgPath != "." {
+			dates.CfgPath = "./" + dates.CfgPath
+		}
 		cfgFile = vpath.Local(dates.CfgPath)
 	} else {
 		dates = &fileargs.FileArguments{
@@ -103,7 +106,7 @@ default for -i is GFS
 		cfgFile = wd.Join("wrfda-runner.cfg")
 	}
 
-	if outArgsFileF != nil && *outArgsFileF != ""{
+	if outArgsFileF != nil && *outArgsFileF != "" {
 		outargs := *outArgsFileF
 
 		var buf lineBuf
