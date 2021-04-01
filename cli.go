@@ -79,10 +79,8 @@ default for -i is GFS
 		if err != nil {
 			log.Fatal(err.Error() + "\n")
 		}
-		if dates.CfgPath != "." {
-			dates.CfgPath = "./" + dates.CfgPath
-		}
-		cfgFile = vpath.Local(dates.CfgPath)
+
+		dates.CfgPath = wd.Join(dates.CfgPath).Path
 	} else {
 		dates = &fileargs.FileArguments{
 			Periods: []*fileargs.Period{},
@@ -103,8 +101,9 @@ default for -i is GFS
 			})
 		}
 
-		cfgFile = wd.Join("wrfda-runner.cfg")
+		dates.CfgPath = wd.Join("wrfda-runner.cfg").Path
 	}
+	cfgFile = vpath.Local(dates.CfgPath)
 
 	if outArgsFileF != nil && *outArgsFileF != "" {
 		outargs := *outArgsFileF
