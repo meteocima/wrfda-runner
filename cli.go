@@ -25,9 +25,9 @@ func main() {
 Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] [-outargs <argsfile>] <workdir> [startdate enddate]
 format for dates: YYYYMMDDHH
 Note: if you omit startdate and enddate, they are read from an arguments.txt
-files that should be put in the workdir.
+files that should be put in a subdirectory of workdir named "inputs"
 default for -p is WPSDA
-default for -i is GFS
+default for -i is GFS (you can omit this argument if you're using an arguments.txt file.)
 `
 
 	phaseF := flag.String("p", "WPSDA", "")
@@ -54,7 +54,7 @@ default for -i is GFS
 		input = conf.GFS
 	} else if *inputF == "IFS" {
 		input = conf.IFS
-	} else {
+	} else if outArgsFileF == nil || *outArgsFileF == "" {
 		log.Fatalf("%s\nUnknown input dataset `%s`", usage, *phaseF)
 	}
 
@@ -75,11 +75,22 @@ default for -i is GFS
 	wd := vpath.Local(absWd)
 
 	if len(args) == 1 {
-		dates, err = runner.ReadTimes("arguments.txt")
+		dates, err = runner.ReadTimes("inputs/arguments.txt")
 		if err != nil {
 			log.Fatal(err.Error() + "\n")
 		}
 
+		if inputF == nil {
+			if strings.HasSuffix(dates.CfgPath, ".gfs.cfg") {
+				input = conf.GFS
+			}
+
+			if strings.HasSuffix(dates.CfgPath, ".ifs.cfg") {
+				input = conf.IFS
+			}
+
+			log.Fatalf("%s\nUnknown input dataset `%s` must end in .gfs.cfg or .ifs.cfg", usage, dates.CfgPath)
+		}
 		dates.CfgPath = wd.Join(dates.CfgPath).Path
 	} else {
 		dates = &fileargs.FileArguments{
@@ -110,9 +121,9 @@ default for -i is GFS
 
 		var buf lineBuf
 		if input == conf.GFS {
-			buf.AddLine("wrfda-runner.it.cfg")
+			buf.AddLine("italy-config.gfs.cfg")
 		} else {
-			buf.AddLine("wrfda-runner.fr.cfg")
+			buf.AddLine("france-config.ifs.cfg")
 		}
 
 		for _, p := range dates.Periods {
