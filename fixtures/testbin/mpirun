@@ -1,0 +1,16 @@
+#!/bin/bash
+echo
+echo '******************************'
+echo THIS IS A FAKE MPIRUN FOR TESTS
+echo cwd is `pwd`
+printf "COMMAND INVOKED: mpirun %s %s %s\n" $1 $2 $3
+echo RUNNING $3
+$3
+if [[ $? != 0 ]]; then
+    echo COMMAND FAILED
+else
+    echo COMMAND SUCCESS
+fi
+
+echo
+echo '******************************'
