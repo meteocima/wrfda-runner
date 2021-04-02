@@ -3,6 +3,9 @@ name: Go
 
 on:
   release:
+    types:
+      - published
+
 
 jobs:
 
