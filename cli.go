@@ -20,6 +20,9 @@ import (
 	"github.com/meteocima/virtual-server/vpath"
 )
 
+// Version of the command
+var Version string = "development"
+
 func main() {
 	usage := `
 Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] [-outargs <argsfile>] <workdir> [startdate enddate]
@@ -28,14 +31,22 @@ Note: if you omit startdate and enddate, they are read from an arguments.txt
 files that should be put in a subdirectory of workdir named "inputs"
 default for -p is WPSDA
 default for -i is GFS (you can omit this argument if you're using an arguments.txt file.)
+
+Show version: wrfda-run -v
 `
 
+	showver := flag.Bool("v", false, "print version to stdout")
 	phaseF := flag.String("p", "WPSDA", "")
 	stepF := flag.String("s", "", "")
 	inputF := flag.String("i", "GFS", "")
 	outArgsFileF := flag.String("outargs", "", "")
 
 	flag.Parse()
+
+	if showver != nil && *showver {
+		fmt.Printf("wrfda-run ver. %s\n", Version)
+		return
+	}
 
 	var phase conf.RunPhase
 	var input conf.InputDataset
