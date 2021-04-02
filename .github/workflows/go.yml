@@ -13,7 +13,7 @@ jobs:
     steps:
 
     - uses: olegtarasov/get-tag@v2.1
-        id: tagName
+      id: tagName
           
     - uses: actions/checkout@v2
 
