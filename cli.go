@@ -116,12 +116,20 @@ Show version: wrfda-run -v
 		if err != nil {
 			log.Fatal(usage + err.Error() + "\n")
 		}
-		for dt := startDate; dt.Before(endDate) || dt.Equal(endDate); dt = dt.Add(24 * time.Hour) {
-			dates.Periods = append(dates.Periods, &fileargs.Period{
-				Start:    dt,
-				Duration: 48 * time.Hour,
-			})
-		}
+
+		duration := endDate.Sub(startDate)
+		dates.Periods = append(dates.Periods, &fileargs.Period{
+			Start:    startDate,
+			Duration: duration,
+		})
+		/*
+			for dt := startDate; dt.Before(endDate) || dt.Equal(endDate); dt = dt.Add(24 * time.Hour) {
+				dates.Periods = append(dates.Periods, &fileargs.Period{
+					Start:    dt,
+					Duration: 48 * time.Hour,
+				})
+			}
+		*/
 
 		dates.CfgPath = wd.Join("wrfda-runner.cfg").Path
 	}
