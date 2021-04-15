@@ -138,18 +138,28 @@ Show version: wrfda-run -v
 	if outArgsFileF != nil && *outArgsFileF != "" {
 		outargs := *outArgsFileF
 
+		_, err := os.Stat(outargs)
+		fileargsExists := err == nil
+
 		var buf lineBuf
-		if input == conf.GFS {
-			buf.AddLine("italy-config.gfs.cfg")
-		} else {
-			buf.AddLine("france-config.ifs.cfg")
+		if !fileargsExists {
+			if input == conf.GFS {
+				buf.AddLine("italy-config.gfs.cfg")
+			} else {
+				buf.AddLine("france-config.ifs.cfg")
+			}
 		}
 
 		for _, p := range dates.Periods {
 			buf.AddLine(p.String())
 		}
 
-		err := buf.WriteTo(outargs)
+		if fileargsExists {
+			err = buf.AppendTo(outargs)
+		} else {
+			err = buf.WriteTo(outargs)
+		}
+
 		if err != nil {
 			log.Fatal(err.Error())
 		}
@@ -207,6 +217,19 @@ func (lines *lineBuf) AddLine(lineFormat string, arguments ...interface{}) {
 
 func (lines *lineBuf) WriteTo(filepath string) error {
 	f, err := os.OpenFile(filepath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, fs.FileMode(0644))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.Write(lines.buf.Bytes())
+	lines.buf.Truncate(0)
+
+	return err
+}
+
+func (lines *lineBuf) AppendTo(filepath string) error {
+	f, err := os.OpenFile(filepath, os.O_APPEND|os.O_WRONLY, fs.FileMode(0644))
 	if err != nil {
 		return err
 	}
