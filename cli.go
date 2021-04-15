@@ -161,32 +161,38 @@ Show version: wrfda-run -v
 	}
 
 	if *stepF == "" {
-		err = runner.Run(dates.Periods[0].Start, dates.Periods[0].Start.Add(24*time.Hour), wd, phase, input, os.Stdout, os.Stderr)
+		err = runner.Run(
+			dates.Periods[0].Start,
+			dates.Periods[0].Start.Add(dates.Periods[0].Duration),
+			wd, phase, input, os.Stdout, os.Stderr,
+		)
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-	} else {
-		parts := strings.Split(*stepF, "-")
-		cycleS := parts[0]
-		cycle, err := strconv.ParseInt(cycleS, 10, 64)
-		if err != nil {
-			panic(err)
-		}
-		var stepType runner.StepType
-		switch parts[1] {
-		case "BuildDA":
-			stepType = runner.BuildDA
-		case "BuildWRF":
-			stepType = runner.BuildWRF
-		case "RunDA":
-			stepType = runner.RunDA
-		case "RunWRF":
-			stepType = runner.RunWRF
-		default:
-			log.Fatalf("Unknown step type %s", parts[1])
-		}
-		runner.RunSingleStep(dates.Periods[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
+		return
 	}
+
+	parts := strings.Split(*stepF, "-")
+	cycleS := parts[0]
+	cycle, err := strconv.ParseInt(cycleS, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	var stepType runner.StepType
+	switch parts[1] {
+	case "BuildDA":
+		stepType = runner.BuildDA
+	case "BuildWRF":
+		stepType = runner.BuildWRF
+	case "RunDA":
+		stepType = runner.RunDA
+	case "RunWRF":
+		stepType = runner.RunWRF
+	default:
+		log.Fatalf("Unknown step type %s", parts[1])
+	}
+	runner.RunSingleStep(dates.Periods[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
+
 }
 
 type lineBuf struct {

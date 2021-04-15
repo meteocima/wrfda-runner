@@ -24,17 +24,18 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 			return fmt.Errorf("WPS working directory `%s` already exists", wpsDir)
 		}
 
+		endDate := startDate.Add(48 * time.Hour)
+
 		workdirOnOrchestrator := folders.WorkdirForDate(startDate)
 		if !vs.Exists(workdirOnOrchestrator) {
-			runner.BuildWorkdirForDate(vs, workdirOnOrchestrator, conf.WPSThenDAPhase, startDate)
+			runner.BuildWorkdirForDate(vs, workdirOnOrchestrator, conf.WPSThenDAPhase, startDate, endDate)
 		}
 
 		workdirOnSimulation := vpath.New("simulation", workdirOnOrchestrator.Path)
 		if !vs.Exists(workdirOnSimulation) {
-			runner.BuildWorkdirForDate(vs, workdirOnSimulation, conf.WPSThenDAPhase, startDate)
+			runner.BuildWorkdirForDate(vs, workdirOnSimulation, conf.WPSThenDAPhase, startDate, endDate)
 		}
 
-		endDate := startDate.Add(48 * time.Hour)
 		runner.BuildWPSDir(vs, startDate, endDate, conf.GFS)
 		runner.RunWPS(vs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
