@@ -3,7 +3,6 @@ package runner
 import (
 	"time"
 
-	"github.com/meteocima/wrfda-runner/common"
 	"github.com/meteocima/wrfda-runner/conf"
 	"github.com/meteocima/wrfda-runner/folders"
 
@@ -44,7 +43,7 @@ func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase
 	logFile := wpsDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New("simulation", "mpirun"),
-		[]string{"-n", common.RealProcCount, "./real.exe"},
+		[]string{"-n", conf.Config.Procs.RealProcCount, "./real.exe"},
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        wpsDir,
@@ -119,7 +118,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 	logFile := wpsDir.Join("geogrid.log.0000")
 	vs.Exec(
 		vpath.New("simulation", "mpirun"),
-		[]string{"-n", common.GeogridProcCount, "./geogrid.exe"},
+		[]string{"-n", conf.Config.Procs.GeogridProcCount, "./geogrid.exe"},
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        wpsDir,
@@ -145,7 +144,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 	logFile2 := wpsDir.Join("metgrid.log.0000")
 	vs.Exec(
 		vpath.New("simulation", "mpirun"),
-		[]string{"-n", common.MetgridProcCount, "./metgrid.exe"},
+		[]string{"-n", conf.Config.Procs.MetgridProcCount, "./metgrid.exe"},
 		&connection.RunOptions{
 			OutFromLog: &logFile2,
 			Cwd:        wpsDir,

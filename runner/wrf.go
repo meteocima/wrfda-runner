@@ -7,7 +7,7 @@ import (
 	"github.com/meteocima/virtual-server/connection"
 	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/vpath"
-	"github.com/meteocima/wrfda-runner/common"
+
 	"github.com/meteocima/wrfda-runner/conf"
 	"github.com/meteocima/wrfda-runner/folders"
 )
@@ -25,7 +25,7 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 	logFile := wrfDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New(wrfDir.Host, "mpirun"),
-		[]string{"-n", common.WrfstepProcCount, "./wrf.exe"},
+		[]string{"-n", conf.Config.Procs.WrfstepProcCount, "./wrf.exe"},
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        wrfDir,

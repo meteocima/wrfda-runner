@@ -28,10 +28,29 @@ type FoldersConf struct {
 	NamelistsDir        vpath.VirtualPath
 }
 
+// ProcsConf ...
+type ProcsConf struct {
+	// GeogridProcCount ...
+	GeogridProcCount string
+
+	// MetgridProcCount ...
+	MetgridProcCount string
+
+	// WrfstepProcCount ...
+	WrfstepProcCount string
+
+	// WrfdaProcCount ...
+	WrfdaProcCount string
+
+	// RealProcCount ...
+	RealProcCount string
+}
+
 // Configuration contains all configuration
 // sub structure (at the moment, only a FoldersConf struct.)
 type Configuration struct {
 	Folders FoldersConf
+	Procs   ProcsConf
 }
 
 // Config is the runtime configuration readed from file.
@@ -83,10 +102,12 @@ func Init(confFile vpath.VirtualPath) error {
 	return err
 }
 
+// NamelistFile ...
 func NamelistFile(source string) vpath.VirtualPath {
 	return Config.Folders.NamelistsDir.Join(source)
 }
 
+// RenderNameList ...
 func RenderNameList(vs *ctx.Context, source string, target vpath.VirtualPath, args namelist.Args) {
 	if vs.Err != nil {
 		return

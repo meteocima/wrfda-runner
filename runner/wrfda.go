@@ -9,7 +9,6 @@ import (
 	"github.com/meteocima/virtual-server/connection"
 	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/vpath"
-	"github.com/meteocima/wrfda-runner/common"
 	"github.com/meteocima/wrfda-runner/conf"
 	"github.com/meteocima/wrfda-runner/folders"
 )
@@ -119,7 +118,7 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 	logFile := daDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New("localhost", "mpirun"),
-		[]string{"-n", common.WrfdaProcCount, "./da_wrfvar.exe"},
+		[]string{"-n", conf.Config.Procs.WrfdaProcCount, "./da_wrfvar.exe"},
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        daDir,
