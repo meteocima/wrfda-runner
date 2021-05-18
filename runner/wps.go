@@ -47,6 +47,7 @@ func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        wpsDir,
+			Env:        conf.Config.Env.ToSlice(),
 		},
 	)
 
@@ -122,6 +123,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        wpsDir,
+			Env:        conf.Config.Env.ToSlice(),
 		},
 	)
 
@@ -148,6 +150,7 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 		&connection.RunOptions{
 			OutFromLog: &logFile2,
 			Cwd:        wpsDir,
+			Env:        conf.Config.Env.ToSlice(),
 		},
 	)
 

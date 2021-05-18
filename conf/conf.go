@@ -5,6 +5,7 @@ package conf
 // for the command.
 
 import (
+	"fmt"
 	"path"
 	"strings"
 
@@ -46,11 +47,28 @@ type ProcsConf struct {
 	RealProcCount string
 }
 
+// EnvVars is a set of environment variables
+// that will be passed to every command executed
+type EnvVars map[string]string
+
+// ToSlice converts variables to a slice of string, each one
+// in the format NAME=VALUE
+func (vars EnvVars) ToSlice() []string {
+	res := make([]string, len(vars))
+	i := 0
+	for name, val := range vars {
+		res[i] = fmt.Sprintf("%s=%s", name, val)
+		i++
+	}
+	return res
+}
+
 // Configuration contains all configuration
-// sub structure (at the moment, only a FoldersConf struct.)
+// sub structures
 type Configuration struct {
 	Folders FoldersConf
 	Procs   ProcsConf
+	Env     EnvVars
 }
 
 // Config is the runtime configuration readed from file.
@@ -115,7 +133,7 @@ func RenderNameList(vs *ctx.Context, source string, target vpath.VirtualPath, ar
 
 	tmplFile := vs.ReadString(NamelistFile(source))
 
-	args.Hours = int(args.End.Sub(args.Start).Hours())
+	//args.Hours = int(args.End.Sub(args.Start).Hours())
 
 	tmpl := namelist.Tmpl{}
 	tmpl.ReadTemplateFrom(strings.NewReader(tmplFile))

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	vsConfig "github.com/meteocima/virtual-server/config"
@@ -175,13 +176,14 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
 	src := folders.RadarObsArchive(startDate, cycle)
 	dst := folders.RadarObsForDate(startDate, cycle)
-	fmt.Println(src, dst)
 	vs.Copy(src, dst)
 
 	src = folders.StationsObsArchive(startDate, cycle)
-	dst = folders.StationsObsForDate(startDate, cycle)
-	fmt.Println(src, dst)
-	vs.Copy(src, dst)
+	if vs.Exists(src) {
+		dst = folders.StationsObsForDate(startDate, cycle)
+		fmt.Println(src, dst)
+		vs.Copy(src, dst)
+	}
 }
 
 // BuildWorkdirForDate ...
@@ -204,14 +206,29 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 	vs.MkDir(gfsDir)
 	vs.MkDir(observationDir)
 
+	files := make(chan vpath.VirtualPath)
+	alldone := sync.WaitGroup{}
+	alldone.Add(10)
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			for f := range files {
+				vs.Copy(f, gfsDir.Join(f.Filename()))
+			}
+			alldone.Done()
+		}()
+	}
+
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		// GFS
 		gfsSources := folders.GFSSources(startDate)
 		for _, gfsFile := range vs.ReadDir(gfsSources) {
 			if vs.IsFile(gfsFile) {
-				vs.Copy(gfsFile, gfsDir.Join(gfsFile.Filename()))
+				files <- gfsFile
 			}
 		}
+		close(files)
+		alldone.Wait()
 	}
 
 	// Observations - weather stations and radars

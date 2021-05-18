@@ -42,12 +42,14 @@ func NewDACycleTask(startDate time.Time, cycle int) *tasks.Task {
 
 	tskID := fmt.Sprintf("WRFDA-%s-CYCLE-%d", dtPart, cycle)
 	tsk := tasks.New(tskID, func(vs *ctx.Context) error {
+
 		if err := checkDirExists(vs, startDate, cycle); err != nil {
 			return err
 		}
 
 		runner.BuildDAStepDir(vs, startDate, endDate, cycle)
 		runner.RunDAStep(vs, startDate, cycle)
+
 		if cycle < 3 {
 			runner.BuildWRFDir(vs, startDate, endDate, cycle)
 			runner.RunWRFStep(vs, startDate, cycle)
