@@ -6,8 +6,8 @@ import (
 
 	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/tasks"
-	"github.com/meteocima/wrfda-runner/folders"
-	"github.com/meteocima/wrfda-runner/runner"
+	"github.com/meteocima/wrfda-runner/v2/folders"
+	"github.com/meteocima/wrfda-runner/v2/runner"
 )
 
 // NewWRFTask ...

@@ -13,8 +13,8 @@ import (
 
 	"time"
 
-	"github.com/meteocima/wrfda-runner/conf"
-	"github.com/meteocima/wrfda-runner/runner"
+	"github.com/meteocima/wrfda-runner/v2/conf"
+	"github.com/meteocima/wrfda-runner/v2/runner"
 	"github.com/parro-it/fileargs"
 
 	"github.com/meteocima/virtual-server/vpath"
