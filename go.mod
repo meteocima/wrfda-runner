@@ -1,4 +1,4 @@
-module github.com/meteocima/wrfda-runner
+module github.com/meteocima/wrfda-runner/v2
 
 go 1.16
 
