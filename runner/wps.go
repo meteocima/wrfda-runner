@@ -3,8 +3,8 @@ package runner
 import (
 	"time"
 
-	"github.com/meteocima/wrfda-runner/conf"
-	"github.com/meteocima/wrfda-runner/folders"
+	"github.com/meteocima/wrfda-runner/v2/conf"
+	"github.com/meteocima/wrfda-runner/v2/folders"
 
 	"github.com/meteocima/namelist-prepare/namelist"
 	"github.com/meteocima/virtual-server/ctx"

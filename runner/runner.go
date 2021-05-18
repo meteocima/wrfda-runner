@@ -12,8 +12,8 @@ import (
 	vsConfig "github.com/meteocima/virtual-server/config"
 	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/vpath"
-	"github.com/meteocima/wrfda-runner/conf"
-	"github.com/meteocima/wrfda-runner/folders"
+	"github.com/meteocima/wrfda-runner/v2/conf"
+	"github.com/meteocima/wrfda-runner/v2/folders"
 )
 
 // ReadDomainCount ...

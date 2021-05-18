@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/meteocima/virtual-server/vpath"
-	"github.com/meteocima/wrfda-runner/conf"
+	"github.com/meteocima/wrfda-runner/v2/conf"
 )
 
 var Root vpath.VirtualPath
