@@ -36,14 +36,16 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 }
 
 // BuildWRFDir ...
-func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int) {
+func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int, host string) {
 	if vs.Err != nil {
 		return
 	}
 	wrfDir := folders.WRFWorkDir(start, step)
+	wrfDir.Host = host
 	vs.LogInfo("build wrf work dir for cycle %d on `%s`", step, wrfDir.String())
 
 	wrfPrg := folders.Cfg.WRFAssStepPrg
+	wrfPrg.Host = host
 	nameListName := "namelist.step.wrf"
 
 	dtStart := start.Add(3 * time.Duration(step-3) * time.Hour)
@@ -103,6 +105,6 @@ func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int) {
 	// prev da results
 	for domain := 1; domain <= domainCount; domain++ {
 		daDir := folders.DAWorkDir(start, domain, step)
-		vs.Link(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
+		vs.Copy(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
 	}
 }

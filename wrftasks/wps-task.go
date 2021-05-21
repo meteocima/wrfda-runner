@@ -2,6 +2,7 @@ package wrftasks
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/meteocima/wrfda-runner/v2/conf"
@@ -19,10 +20,10 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 
 	tskID := fmt.Sprintf("WPS-%s", dtPart)
 	tsk := tasks.New(tskID, func(vs *ctx.Context) error {
-		wpsDir := folders.WPSWorkDir(startDate)
-		if vs.Exists(wpsDir) {
-			return fmt.Errorf("WPS working directory `%s` already exists", wpsDir)
-		}
+		//wpsDir := folders.WPSWorkDir(startDate)
+		//if vs.Exists(wpsDir) {
+		//	return fmt.Errorf("WPS working directory `%s` already exists", wpsDir)
+		//}
 
 		endDate := startDate.Add(48 * time.Hour)
 
@@ -31,13 +32,23 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 		//	runner.BuildWorkdirForDate(vs, workdirOnOrchestrator, conf.WPSThenDAPhase, startDate, endDate)
 		//}
 
-		workdirOnSimulation := vpath.New("simulation", workdirOnOrchestrator.Path)
-		if !vs.Exists(workdirOnSimulation) {
-			runner.BuildWorkdirForDate(vs, workdirOnSimulation, conf.WPSThenDAPhase, startDate, endDate)
+		hostsS, hasHosts := conf.Config.Env["I_MPI_HYDRA_HOSTS_GROUP"]
+
+		hosts := strings.Split(hostsS, ",")
+
+		if !hasHosts {
+			hosts = append(hosts, "simulation")
 		}
 
-		runner.BuildWPSDir(vs, startDate, endDate, conf.GFS)
-		runner.RunWPS(vs, startDate, endDate)
+		for _, host := range hosts {
+			workdirOnHost := vpath.New(host, workdirOnOrchestrator.Path)
+			if !vs.Exists(workdirOnHost) {
+				runner.BuildWorkdirForDate(vs, workdirOnHost, conf.WPSThenDAPhase, startDate, endDate)
+			}
+		}
+
+		//runner.BuildWPSDir(vs, startDate, endDate, conf.GFS)
+		//runner.RunWPS(vs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
 			runner.BuildNamelistForReal(vs, startDate, endDate, step)
 			runner.RunReal(vs, startDate, step, conf.WPSPhase)

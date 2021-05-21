@@ -13,13 +13,14 @@ import (
 	"github.com/meteocima/wrfda-runner/v2/folders"
 )
 
-func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int) {
+func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int, host string) {
 	if vs.Err != nil {
 		return
 	}
 	assimDate := start.Add(3 * time.Duration(step-3) * time.Hour)
 	// prepare da dir
 	daDir := folders.DAWorkDir(start, domain, step)
+	daDir.Host = host
 	vs.LogInfo("build wrfda work dir for cycle %d, domain %d on `%s`", step, domain, daDir.String())
 
 	vs.MkDir(daDir)
@@ -76,7 +77,9 @@ func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int)
 	)
 
 	wrfdaPrg := folders.Cfg.WRFDAPrg
+	wrfdaPrg.Host = host
 	matrixDir := folders.Cfg.CovarMatrixesDir
+	matrixDir.Host = host
 
 	// link files from WRFDA build directory
 	vs.Link(wrfdaPrg.Join("var/build/da_wrfvar.exe"), daDir.Join("da_wrfvar.exe"))
@@ -102,9 +105,8 @@ func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int)
 	vs.Link(matrixDir.Join("%s/be_d%02d", season, domain), daDir.Join("be.dat"))
 
 	// link observations
-
-	vs.Link(folders.RadarObsForDate(start, step), daDir.Join("ob.radar"))
-	vs.Link(folders.StationsObsForDate(start, step), daDir.Join("ob.ascii"))
+	vs.Link(folders.RadarObsForDate(start, step, host), daDir.Join("ob.radar"))
+	vs.Link(folders.StationsObsForDate(start, step, host), daDir.Join("ob.ascii"))
 }
 
 func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
@@ -142,23 +144,23 @@ func RunDAStep(vs *ctx.Context, start time.Time, step int) {
 	allSteps := sync.WaitGroup{}
 	allSteps.Add(domainCount)
 	for domain := 1; domain <= domainCount; domain++ {
-		go func(domain int) {
-			runDAStepInDomain(vs, start, step, domain)
-			allSteps.Done()
-		}(domain)
+		//go func(domain int) {
+		runDAStepInDomain(vs, start, step, domain)
+		allSteps.Done()
+		//}(domain)
 	}
 	allSteps.Wait()
 }
 
 // BuildDAStepDir ...
-func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int) {
+func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int, host string) {
 	if vs.Err != nil {
 		return
 	}
 	domainCount := ReadDomainCount(vs, conf.DAPhase)
 
 	for domain := 1; domain <= domainCount; domain++ {
-		buildDADirInDomain(vs, start, end, step, domain)
+		buildDADirInDomain(vs, start, end, step, domain, host)
 	}
 
 }

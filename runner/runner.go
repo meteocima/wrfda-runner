@@ -127,10 +127,10 @@ func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate, endDate time.Time
 
 	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
 		for cycle := 1; cycle <= 3; cycle++ {
-			BuildDAStepDir(vs, startDate, endDate, cycle)
+			BuildDAStepDir(vs, startDate, endDate, cycle, "simulation")
 			RunDAStep(vs, startDate, cycle)
 
-			BuildWRFDir(vs, startDate, endDate, cycle)
+			BuildWRFDir(vs, startDate, endDate, cycle, "simulation")
 			RunWRFStep(vs, startDate, cycle)
 		}
 	}
@@ -158,10 +158,10 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 
 	switch stepType {
 	case BuildDA:
-		BuildDAStepDir(vs, startDate, endDate, cycle)
+		BuildDAStepDir(vs, startDate, endDate, cycle, "simulation")
 
 	case BuildWRF:
-		BuildWRFDir(vs, startDate, endDate, cycle)
+		BuildWRFDir(vs, startDate, endDate, cycle, "simulation")
 
 	case RunDA:
 		RunDAStep(vs, startDate, cycle)
@@ -173,15 +173,15 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 	}
 }
 
-func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
+func cpObservations(vs *ctx.Context, cycle int, startDate time.Time, host string) {
 	src := folders.RadarObsArchive(startDate, cycle)
-	dst := folders.RadarObsForDate(startDate, cycle)
+	dst := folders.RadarObsForDate(startDate, cycle, host)
+
 	vs.Copy(src, dst)
 
 	src = folders.StationsObsArchive(startDate, cycle)
 	if vs.Exists(src) {
-		dst = folders.StationsObsForDate(startDate, cycle)
-		fmt.Println(src, dst)
+		dst = folders.StationsObsForDate(startDate, cycle, host)
 		vs.Copy(src, dst)
 	}
 }
@@ -192,13 +192,20 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 		return
 	}
 
+	h := workdir.Host
+	geodataDir := vpath.New(h, conf.Config.Folders.GeodataDir.Path)
+	wpsPrg := vpath.New(h, conf.Config.Folders.WPSPrg.Path)
+	wrfdaPrg := vpath.New(h, conf.Config.Folders.WRFDAPrg.Path)
+	wrfMainRunPrg := vpath.New(h, conf.Config.Folders.WRFMainRunPrg.Path)
+	wrfAssStepPrg := vpath.New(h, conf.Config.Folders.WRFAssStepPrg.Path)
+
 	vs.MkDir(workdir)
 
-	vs.Link(conf.Config.Folders.GeodataDir, workdir.Join("geodata"))
-	vs.Link(conf.Config.Folders.WPSPrg, workdir.Join("wpsprg"))
-	vs.Link(conf.Config.Folders.WRFDAPrg, workdir.Join("wrfdaprg"))
-	vs.Link(conf.Config.Folders.WRFMainRunPrg, workdir.Join("wrfprgrun"))
-	vs.Link(conf.Config.Folders.WRFAssStepPrg, workdir.Join("wrfprgstep"))
+	vs.Link(geodataDir, workdir.Join("geodata"))
+	vs.Link(wpsPrg, workdir.Join("wpsprg"))
+	vs.Link(wrfdaPrg, workdir.Join("wrfdaprg"))
+	vs.Link(wrfMainRunPrg, workdir.Join("wrfprgrun"))
+	vs.Link(wrfAssStepPrg, workdir.Join("wrfprgstep"))
 
 	observationDir := workdir.Join("observations")
 	gfsDir := workdir.Join("gfs")
@@ -233,8 +240,8 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 
 	// Observations - weather stations and radars
 	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
-		cpObservations(vs, 1, startDate)
-		cpObservations(vs, 2, startDate)
-		cpObservations(vs, 3, startDate)
+		cpObservations(vs, 1, startDate, h)
+		cpObservations(vs, 2, startDate, h)
+		cpObservations(vs, 3, startDate, h)
 	}
 }

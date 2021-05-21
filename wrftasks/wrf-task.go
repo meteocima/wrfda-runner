@@ -2,10 +2,12 @@ package wrftasks
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/meteocima/virtual-server/ctx"
 	"github.com/meteocima/virtual-server/tasks"
+	"github.com/meteocima/wrfda-runner/v2/conf"
 	"github.com/meteocima/wrfda-runner/v2/folders"
 	"github.com/meteocima/wrfda-runner/v2/runner"
 )
@@ -23,7 +25,17 @@ func NewWRFTask(startDate time.Time) *tasks.Task {
 			return fmt.Errorf("working directory `%s` already exists for WRF main run for date %s", wrfDir, dtPart)
 		}
 
-		runner.BuildWRFDir(vs, startDate, endDate, 3)
+		hostsS, hasHosts := conf.Config.Env["I_MPI_HYDRA_HOSTS_GROUP"]
+
+		hosts := strings.Split(hostsS, ",")
+
+		if !hasHosts {
+			hosts = append(hosts, "simulation")
+		}
+
+		for _, host := range hosts {
+			runner.BuildWRFDir(vs, startDate, endDate, 3, host)
+		}
 		runner.RunWRFStep(vs, startDate, 3)
 
 		return nil

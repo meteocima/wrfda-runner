@@ -2,6 +2,7 @@ package wrftasks
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/meteocima/virtual-server/ctx"
@@ -47,13 +48,29 @@ func NewDACycleTask(startDate time.Time, cycle int) *tasks.Task {
 			return err
 		}
 
-		runner.BuildDAStepDir(vs, startDate, endDate, cycle)
+		hostsS, hasHosts := conf.Config.Env["I_MPI_HYDRA_HOSTS_GROUP"]
+
+		hosts := strings.Split(hostsS, ",")
+
+		if !hasHosts {
+			hosts = append(hosts, "simulation")
+		}
+
+		for _, host := range hosts {
+			runner.BuildDAStepDir(vs, startDate, endDate, cycle, host)
+		}
+
 		runner.RunDAStep(vs, startDate, cycle)
 
-		if cycle < 3 {
-			runner.BuildWRFDir(vs, startDate, endDate, cycle)
-			runner.RunWRFStep(vs, startDate, cycle)
+		if cycle >= 3 {
+			return nil
 		}
+
+		for _, host := range hosts {
+			runner.BuildWRFDir(vs, startDate, endDate, cycle, host)
+		}
+		runner.RunWRFStep(vs, startDate, cycle)
+
 		return nil
 	})
 	tsk.Description = fmt.Sprintf("WRFDA cycle %d of date %s", cycle, dtPart)
