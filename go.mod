@@ -15,4 +15,5 @@ require (
 )
 
 replace github.com/meteocima/virtual-server => ../virtual-server
+
 replace github.com/meteocima/namelist-prepare => ../namelist-prepare
