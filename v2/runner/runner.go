@@ -177,12 +177,16 @@ func cpObservations(vs *ctx.Context, cycle int, startDate time.Time, host string
 	src := folders.RadarObsArchive(startDate, cycle)
 	dst := folders.RadarObsForDate(startDate, cycle, host)
 
+	vs.LogInfo("Copy radar for cycle %d to %s\n", cycle, host)
 	vs.Copy(src, dst)
+	vs.LogInfo("Copy done\n")
 
 	src = folders.StationsObsArchive(startDate, cycle)
 	if vs.Exists(src) {
 		dst = folders.StationsObsForDate(startDate, cycle, host)
+		vs.LogInfo("Copy radar for cycle %d to %s\n", cycle, host)
 		vs.Copy(src, dst)
+		vs.LogInfo("Copy done\n")
 	}
 }
 
@@ -213,11 +217,13 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 	vs.MkDir(gfsDir)
 	vs.MkDir(observationDir)
 
+	vs.LogInfo("Copy GFS files to %s\n", h)
+
 	files := make(chan vpath.VirtualPath)
 	alldone := sync.WaitGroup{}
-	alldone.Add(10)
+	alldone.Add(20)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		go func() {
 			for f := range files {
 				vs.Copy(f, gfsDir.Join(f.Filename()))
@@ -238,10 +244,19 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 		alldone.Wait()
 	}
 
+	vs.LogInfo("Copy done\n")
+
 	// Observations - weather stations and radars
 	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
-		cpObservations(vs, 1, startDate, h)
-		cpObservations(vs, 2, startDate, h)
-		cpObservations(vs, 3, startDate, h)
+		alldone = sync.WaitGroup{}
+		alldone.Add(3)
+
+		for i := 0; i < 3; i++ {
+			go func(i int) {
+				cpObservations(vs, i, startDate, h)
+				alldone.Done()
+			}(i)
+		}
+		alldone.Wait()
 	}
 }

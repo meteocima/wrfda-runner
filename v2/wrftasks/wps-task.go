@@ -3,6 +3,7 @@ package wrftasks
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/meteocima/wrfda-runner/v2/conf"
@@ -40,15 +41,21 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 			hosts = append(hosts, "simulation")
 		}
 
+		alldone := sync.WaitGroup{}
+		alldone.Add(len(hosts))
 		for _, host := range hosts {
-			workdirOnHost := vpath.New(host, workdirOnOrchestrator.Path)
-			if !vs.Exists(workdirOnHost) {
-				runner.BuildWorkdirForDate(vs, workdirOnHost, conf.WPSThenDAPhase, startDate, endDate)
-			}
+			go func(host string) {
+				workdirOnHost := vpath.New(host, workdirOnOrchestrator.Path)
+				if !vs.Exists(workdirOnHost) {
+					runner.BuildWorkdirForDate(vs, workdirOnHost, conf.WPSThenDAPhase, startDate, endDate)
+				}
+				alldone.Done()
+			}(host)
 		}
+		alldone.Wait()
 
-		//runner.BuildWPSDir(vs, startDate, endDate, conf.GFS)
-		//runner.RunWPS(vs, startDate, endDate)
+		runner.BuildWPSDir(vs, startDate, endDate, conf.GFS)
+		runner.RunWPS(vs, startDate, endDate)
 		for step := 1; step <= 3; step++ {
 			runner.BuildNamelistForReal(vs, startDate, endDate, step)
 			runner.RunReal(vs, startDate, step, conf.WPSPhase)

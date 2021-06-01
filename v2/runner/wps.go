@@ -54,17 +54,24 @@ func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase
 	indir := folders.InputsDir(startDate)
 	vs.MkDir(indir)
 
+	vs.LogInfo("Copy wrfbdy_d01 to localhost\n")
+
 	vs.Copy(wpsDir.Join("wrfbdy_d01"), indir.Join("wrfbdy_d01_da%02d", step))
+
+	vs.LogInfo("Copy done\n")
 
 	if step != 1 {
 		return
 	}
 
 	for domain := 1; domain <= domainCount; domain++ {
+		vs.LogInfo("Copy input for domain %d to localhost\n", domain)
 		vs.Copy(
 			wpsDir.Join("wrfinput_d%02d", domain),
 			indir.Join("wrfinput_d%02d", domain),
 		)
+		vs.LogInfo("Copy done\n")
+
 	}
 
 }

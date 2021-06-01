@@ -27,18 +27,23 @@ func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int,
 
 	if domain == 1 {
 		// domain 1 in every step of assimilation receives boundaries from WPS or from 'inputs' directory.
+		vs.LogInfo("Copy wrfbdy_d01_da%02d to %s\n", step, host)
 		vs.Copy(
 			folders.InputsDir(start).Join("wrfbdy_d01_da%02d", step),
 			daDir.Join("wrfbdy_d01"),
 		)
+		vs.LogInfo("Copy done\n")
 	}
 
 	if step == 1 {
+		vs.LogInfo("Copy wrfbdy_d01_da%02d to %s\n", domain, host)
+
 		// first step of assimilation receives fg input from WPS or from 'inputs' directory.
 		vs.Copy(
 			folders.InputsDir(start).Join("wrfinput_d%02d", domain),
 			daDir.Join("fg"),
 		)
+		vs.LogInfo("Copy done\n")
 	} else {
 		// the others steps receives input from the WRF run
 		// of previous step.
@@ -48,11 +53,13 @@ func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int,
 		}
 
 		previousStep := folders.WRFWorkDir(start, step-1)
-
+		vs.LogInfo("Copy wrfvar_input_d%02d to %s\n", domain, host)
 		vs.Copy(
 			previousStep.Join("wrfvar_input_d%02d", domain),
 			daDir.Join("fg"),
 		)
+		vs.LogInfo("Copy done\n")
+
 	}
 
 	// build namelist for wrfda
@@ -159,8 +166,14 @@ func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int, host string
 	}
 	domainCount := ReadDomainCount(vs, conf.DAPhase)
 
-	for domain := 1; domain <= domainCount; domain++ {
-		buildDADirInDomain(vs, start, end, step, domain, host)
-	}
+	alldone := sync.WaitGroup{}
+	alldone.Add(domainCount)
 
+	for domain := 1; domain <= domainCount; domain++ {
+		go func(domain int) {
+			buildDADirInDomain(vs, start, end, step, domain, host)
+			alldone.Done()
+		}(domain)
+	}
+	alldone.Wait()
 }

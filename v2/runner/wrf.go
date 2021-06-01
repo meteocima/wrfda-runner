@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"sync"
 	"time"
 
 	"github.com/meteocima/namelist-prepare/namelist"
@@ -61,7 +62,10 @@ func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int, host string) {
 
 	// boundary from same cycle da dir for domain 1
 	daBdy := folders.DAWorkDir(start, 1, step).Join("wrfbdy_d01")
+
+	vs.LogInfo("Copy wrfbdy_d01 to %s\n", host)
 	vs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
+	vs.LogInfo("Copy done\n")
 
 	// build namelist for wrf
 	conf.RenderNameList(
@@ -102,9 +106,18 @@ func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int, host string) {
 
 	domainCount := ReadDomainCount(vs, conf.DAPhase)
 
+	alldone := sync.WaitGroup{}
+	alldone.Add(domainCount)
+
 	// prev da results
 	for domain := 1; domain <= domainCount; domain++ {
-		daDir := folders.DAWorkDir(start, domain, step)
-		vs.Copy(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
+		go func(domain int) {
+			daDir := folders.DAWorkDir(start, domain, step)
+			vs.LogInfo("Copy wrfinput_d%02d to %s\n", domain, host)
+			vs.Copy(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
+			vs.LogInfo("Copy done\n")
+			alldone.Done()
+		}(domain)
 	}
+	alldone.Wait()
 }
