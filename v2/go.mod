@@ -11,4 +11,5 @@ require (
 	github.com/meteocima/namelist-prepare v1.1.0
 	github.com/meteocima/virtual-server v1.8.0
 	github.com/parro-it/fileargs v0.0.0-20210327105848-8399f23fc4ca
+	github.com/stretchr/testify v1.7.0
 )
