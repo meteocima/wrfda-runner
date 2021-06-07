@@ -174,17 +174,19 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 }
 
 func cpObservations(vs *ctx.Context, cycle int, startDate time.Time, host string) {
+	vs.LogInfo("Copy radar for date %s\n", startDate.Format("200601021504"))
+
 	src := folders.RadarObsArchive(startDate, cycle)
 	dst := folders.RadarObsForDate(startDate, cycle, host)
 
-	vs.LogInfo("Copy radar for cycle %d to %s\n", cycle, host)
+	vs.LogInfo("Copy radar for cycle %d to %s: %s -> %s\n", cycle, host, src, dst)
 	vs.Copy(src, dst)
 	vs.LogInfo("Copy done\n")
 
 	src = folders.StationsObsArchive(startDate, cycle)
 	if vs.Exists(src) {
 		dst = folders.StationsObsForDate(startDate, cycle, host)
-		vs.LogInfo("Copy radar for cycle %d to %s\n", cycle, host)
+		vs.LogInfo("Copy observations for cycle %d to %s: %s -> %s\n", cycle, host, src, dst)
 		vs.Copy(src, dst)
 		vs.LogInfo("Copy done\n")
 	}
@@ -220,20 +222,24 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 	vs.LogInfo("Copy GFS files to %s\n", h)
 
 	files := make(chan vpath.VirtualPath)
-	alldone := sync.WaitGroup{}
-	alldone.Add(20)
-
-	for i := 0; i < 20; i++ {
-		go func() {
-			for f := range files {
-				vs.Copy(f, gfsDir.Join(f.Filename()))
-			}
-			alldone.Done()
-		}()
-	}
+	var alldone sync.WaitGroup
 
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		// GFS
+
+		alldone = sync.WaitGroup{}
+		alldone.Add(20)
+
+		for i := 0; i < 20; i++ {
+			go func() {
+				for f := range files {
+					vs.LogInfo("Copy GFS file %s", gfsDir.Join(f.Filename()).String())
+					vs.Copy(f, gfsDir.Join(f.Filename()))
+				}
+				alldone.Done()
+			}()
+		}
+
 		gfsSources := folders.GFSSources(startDate)
 		for _, gfsFile := range vs.ReadDir(gfsSources) {
 			if vs.IsFile(gfsFile) {
@@ -253,7 +259,7 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 
 		for i := 0; i < 3; i++ {
 			go func(i int) {
-				cpObservations(vs, i, startDate, h)
+				cpObservations(vs, i+1, startDate, h)
 				alldone.Done()
 			}(i)
 		}
