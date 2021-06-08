@@ -33,8 +33,8 @@ func NewWRFTask(startDate time.Time) *tasks.Task {
 			hosts = append(hosts, "simulation")
 		}
 
-		for _, host := range hosts {
-			runner.BuildWRFDir(vs, startDate, endDate, 3, host)
+		for idx, host := range hosts {
+			runner.BuildWRFDir(vs, startDate, endDate, 3, host, idx == 0)
 		}
 		runner.RunWRFStep(vs, startDate, 3)
 

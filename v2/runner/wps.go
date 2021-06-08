@@ -54,23 +54,23 @@ func RunReal(vs *ctx.Context, startDate time.Time, step int, phase conf.RunPhase
 	indir := folders.InputsDir(startDate)
 	vs.MkDir(indir)
 
-	vs.LogInfo("Copy wrfbdy_d01 to localhost\n")
+	vs.LogInfo("Copy wrfbdy_d01 to localhost")
 
 	vs.Copy(wpsDir.Join("wrfbdy_d01"), indir.Join("wrfbdy_d01_da%02d", step))
 
-	vs.LogInfo("Copy done\n")
+	vs.LogInfo("Copy done")
 
 	if step != 1 {
 		return
 	}
 
 	for domain := 1; domain <= domainCount; domain++ {
-		vs.LogInfo("Copy input for domain %d to localhost\n", domain)
+		vs.LogInfo("Copy input for domain %d to localhost", domain)
 		vs.Copy(
 			wpsDir.Join("wrfinput_d%02d", domain),
 			indir.Join("wrfinput_d%02d", domain),
 		)
-		vs.LogInfo("Copy done\n")
+		vs.LogInfo("Copy done")
 
 	}
 
@@ -134,9 +134,16 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 		},
 	)
 
-	vs.Exec(wpsDir.Join("./link_grib.csh"), []string{"../gfs/*"}, &connection.RunOptions{
-		Cwd: wpsDir,
-	})
+	gfsDirPattern := conf.Config.Folders.GFSArchive.Path
+	gfsDir := start.Add(-6 * time.Hour).Format(gfsDirPattern)
+
+	vs.Exec(
+		wpsDir.Join("./link_grib.csh"),
+		[]string{gfsDir},
+		&connection.RunOptions{
+			Cwd: wpsDir,
+		},
+	)
 
 	vs.Exec(wpsDir.Join("./ungrib.exe"), []string{}, &connection.RunOptions{
 		Cwd: wpsDir,
