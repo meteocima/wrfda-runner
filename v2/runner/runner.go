@@ -99,12 +99,12 @@ func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.Run
 	domainCount := ReadDomainCount(vs, phase)
 
 	//for dt := startDate; dt.Unix() < endDate.Unix(); dt = dt.Add(time.Hour * 24) {
-	vs.LogInfo("STARTING RUN FOR DATE %s\n", startDate.Format("2006010215"))
+	vs.LogInfo("STARTING RUN FOR DATE %s", startDate.Format("2006010215"))
 	dir := folders.WorkdirForDate(startDate)
-	BuildWorkdirForDate(vs, dir, phase, startDate, endDate)
+	BuildWorkdirForDate(vs, dir, phase, startDate, endDate, true)
 	runWRFDA(vs, phase, startDate, endDate, input, domainCount)
 	if vs.Err == nil {
-		vs.LogInfo("RUN FOR DATE %s COMPLETED\n", startDate.Format("2006010215"))
+		vs.LogInfo("RUN FOR DATE %s COMPLETED", startDate.Format("2006010215"))
 	}
 	//}
 
@@ -127,10 +127,10 @@ func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate, endDate time.Time
 
 	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
 		for cycle := 1; cycle <= 3; cycle++ {
-			BuildDAStepDir(vs, startDate, endDate, cycle, "simulation")
+			BuildDAStepDir(vs, startDate, endDate, cycle, "simulation", true)
 			RunDAStep(vs, startDate, cycle)
 
-			BuildWRFDir(vs, startDate, endDate, cycle, "simulation")
+			BuildWRFDir(vs, startDate, endDate, cycle, "simulation", true)
 			RunWRFStep(vs, startDate, cycle)
 		}
 	}
@@ -158,10 +158,10 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 
 	switch stepType {
 	case BuildDA:
-		BuildDAStepDir(vs, startDate, endDate, cycle, "simulation")
+		BuildDAStepDir(vs, startDate, endDate, cycle, "simulation", true)
 
 	case BuildWRF:
-		BuildWRFDir(vs, startDate, endDate, cycle, "simulation")
+		BuildWRFDir(vs, startDate, endDate, cycle, "simulation", true)
 
 	case RunDA:
 		RunDAStep(vs, startDate, cycle)
@@ -174,26 +174,26 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 }
 
 func cpObservations(vs *ctx.Context, cycle int, startDate time.Time, host string) {
-	vs.LogInfo("Copy radar for date %s\n", startDate.Format("200601021504"))
+	vs.LogInfo("Copy radar for date %s", startDate.Format("200601021504"))
 
 	src := folders.RadarObsArchive(startDate, cycle)
 	dst := folders.RadarObsForDate(startDate, cycle, host)
 
-	vs.LogInfo("Copy radar for cycle %d to %s: %s -> %s\n", cycle, host, src, dst)
+	vs.LogInfo("Copy radar for cycle %d to %s: %s -> %s", cycle, host, src, dst)
 	vs.Copy(src, dst)
-	vs.LogInfo("Copy done\n")
+	vs.LogInfo("Copy done")
 
 	src = folders.StationsObsArchive(startDate, cycle)
 	if vs.Exists(src) {
 		dst = folders.StationsObsForDate(startDate, cycle, host)
-		vs.LogInfo("Copy observations for cycle %d to %s: %s -> %s\n", cycle, host, src, dst)
+		vs.LogInfo("Copy observations for cycle %d to %s: %s -> %s", cycle, host, src, dst)
 		vs.Copy(src, dst)
-		vs.LogInfo("Copy done\n")
+		vs.LogInfo("Copy done")
 	}
 }
 
 // BuildWorkdirForDate ...
-func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.RunPhase, startDate, endDate time.Time) {
+func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.RunPhase, startDate, endDate time.Time, mainHost bool) {
 	if vs.Err != nil {
 		return
 	}
@@ -219,41 +219,42 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 	vs.MkDir(gfsDir)
 	vs.MkDir(observationDir)
 
-	vs.LogInfo("Copy GFS files to %s\n", h)
+	vs.LogInfo("Copy GFS files to %s", h)
 
-	files := make(chan vpath.VirtualPath)
+	//files := make(chan vpath.VirtualPath)
 	var alldone sync.WaitGroup
 
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		// GFS
+		/*
+			alldone = sync.WaitGroup{}
+			alldone.Add(20)
 
-		alldone = sync.WaitGroup{}
-		alldone.Add(20)
-
-		for i := 0; i < 20; i++ {
-			go func() {
-				for f := range files {
-					vs.LogInfo("Copy GFS file %s", gfsDir.Join(f.Filename()).String())
-					vs.Copy(f, gfsDir.Join(f.Filename()))
-				}
-				alldone.Done()
-			}()
-		}
-
-		gfsSources := folders.GFSSources(startDate)
-		for _, gfsFile := range vs.ReadDir(gfsSources) {
-			if vs.IsFile(gfsFile) {
-				files <- gfsFile
+			for i := 0; i < 20; i++ {
+				go func() {
+					for f := range files {
+						vs.LogInfo("Copy GFS file %s", gfsDir.Join(f.Filename()).String())
+						vs.Copy(f, gfsDir.Join(f.Filename()))
+					}
+					alldone.Done()
+				}()
 			}
-		}
-		close(files)
-		alldone.Wait()
+
+			gfsSources := folders.GFSSources(startDate)
+			for _, gfsFile := range vs.ReadDir(gfsSources) {
+				if vs.IsFile(gfsFile) {
+					files <- gfsFile
+				}
+			}
+			close(files)
+			alldone.Wait()
+		*/
 	}
 
-	vs.LogInfo("Copy done\n")
+	vs.LogInfo("Copy done")
 
 	// Observations - weather stations and radars
-	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
+	if mainHost && (phase == conf.DAPhase || phase == conf.WPSThenDAPhase) {
 		alldone = sync.WaitGroup{}
 		alldone.Add(3)
 

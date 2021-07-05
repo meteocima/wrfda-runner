@@ -13,7 +13,7 @@ import (
 	"github.com/meteocima/wrfda-runner/v2/folders"
 )
 
-func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int, host string) {
+func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int, host string, mainHost bool) {
 	if vs.Err != nil {
 		return
 	}
@@ -24,44 +24,44 @@ func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int,
 	vs.LogInfo("build wrfda work dir for cycle %d, domain %d on `%s`", step, domain, daDir.String())
 
 	vs.MkDir(daDir)
-
-	if domain == 1 {
-		// domain 1 in every step of assimilation receives boundaries from WPS or from 'inputs' directory.
-		vs.LogInfo("Copy wrfbdy_d01_da%02d to %s\n", step, host)
-		vs.Copy(
-			folders.InputsDir(start).Join("wrfbdy_d01_da%02d", step),
-			daDir.Join("wrfbdy_d01"),
-		)
-		vs.LogInfo("Copy done\n")
-	}
-
-	if step == 1 {
-		vs.LogInfo("Copy wrfbdy_d01_da%02d to %s\n", domain, host)
-
-		// first step of assimilation receives fg input from WPS or from 'inputs' directory.
-		vs.Copy(
-			folders.InputsDir(start).Join("wrfinput_d%02d", domain),
-			daDir.Join("fg"),
-		)
-		vs.LogInfo("Copy done\n")
-	} else {
-		// the others steps receives input from the WRF run
-		// of previous step.
-		prevHour := assimDate.Hour() - 3
-		if prevHour < 0 {
-			prevHour += 24
+	if mainHost {
+		if domain == 1 {
+			// domain 1 in every step of assimilation receives boundaries from WPS or from 'inputs' directory.
+			vs.LogInfo("Copy wrfbdy_d01_da%02d to %s", step, host)
+			vs.Copy(
+				folders.InputsDir(start).Join("wrfbdy_d01_da%02d", step),
+				daDir.Join("wrfbdy_d01"),
+			)
+			vs.LogInfo("Copy done")
 		}
 
-		previousStep := folders.WRFWorkDir(start, step-1)
-		vs.LogInfo("Copy wrfvar_input_d%02d to %s\n", domain, host)
-		vs.Copy(
-			previousStep.Join("wrfvar_input_d%02d", domain),
-			daDir.Join("fg"),
-		)
-		vs.LogInfo("Copy done\n")
+		if step == 1 {
+			vs.LogInfo("Copy wrfbdy_d01_da%02d to %s", domain, host)
 
+			// first step of assimilation receives fg input from WPS or from 'inputs' directory.
+			vs.Copy(
+				folders.InputsDir(start).Join("wrfinput_d%02d", domain),
+				daDir.Join("fg"),
+			)
+			vs.LogInfo("Copy done")
+		} else {
+			// the others steps receives input from the WRF run
+			// of previous step.
+			prevHour := assimDate.Hour() - 3
+			if prevHour < 0 {
+				prevHour += 24
+			}
+
+			previousStep := folders.WRFWorkDir(start, step-1)
+			vs.LogInfo("Copy wrfvar_input_d%02d to %s", domain, host)
+			vs.Copy(
+				previousStep.Join("wrfvar_input_d%02d", domain),
+				daDir.Join("fg"),
+			)
+			vs.LogInfo("Copy done")
+
+		}
 	}
-
 	// build namelist for wrfda
 	conf.RenderNameList(
 		vs,
@@ -160,7 +160,7 @@ func RunDAStep(vs *ctx.Context, start time.Time, step int) {
 }
 
 // BuildDAStepDir ...
-func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int, host string) {
+func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int, host string, mainHost bool) {
 	if vs.Err != nil {
 		return
 	}
@@ -171,7 +171,7 @@ func BuildDAStepDir(vs *ctx.Context, start, end time.Time, step int, host string
 
 	for domain := 1; domain <= domainCount; domain++ {
 		go func(domain int) {
-			buildDADirInDomain(vs, start, end, step, domain, host)
+			buildDADirInDomain(vs, start, end, step, domain, host, mainHost)
 			alldone.Done()
 		}(domain)
 	}

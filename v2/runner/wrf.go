@@ -37,7 +37,7 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 }
 
 // BuildWRFDir ...
-func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int, host string) {
+func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int, host string, mainHost bool) {
 	if vs.Err != nil {
 		return
 	}
@@ -59,13 +59,6 @@ func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int, host string) {
 	}
 
 	vs.MkDir(wrfDir)
-
-	// boundary from same cycle da dir for domain 1
-	daBdy := folders.DAWorkDir(start, 1, step).Join("wrfbdy_d01")
-
-	vs.LogInfo("Copy wrfbdy_d01 to %s\n", host)
-	vs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
-	vs.LogInfo("Copy done\n")
 
 	// build namelist for wrf
 	conf.RenderNameList(
@@ -104,20 +97,29 @@ func BuildWRFDir(vs *ctx.Context, start, end time.Time, step int, host string) {
 	vs.Link(wrfPrg.Join("run/SOILPARM.TBL"), wrfDir.Join("SOILPARM.TBL"))
 	vs.Link(wrfPrg.Join("run/GENPARM.TBL"), wrfDir.Join("GENPARM.TBL"))
 
-	domainCount := ReadDomainCount(vs, conf.DAPhase)
+	if mainHost {
+		// boundary from same cycle da dir for domain 1
+		daBdy := folders.DAWorkDir(start, 1, step).Join("wrfbdy_d01")
 
-	alldone := sync.WaitGroup{}
-	alldone.Add(domainCount)
+		vs.LogInfo("Copy wrfbdy_d01 to %s", host)
+		vs.Copy(daBdy, wrfDir.Join("wrfbdy_d01"))
+		vs.LogInfo("Copy done")
 
-	// prev da results
-	for domain := 1; domain <= domainCount; domain++ {
-		go func(domain int) {
-			daDir := folders.DAWorkDir(start, domain, step)
-			vs.LogInfo("Copy wrfinput_d%02d to %s\n", domain, host)
-			vs.Copy(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
-			vs.LogInfo("Copy done\n")
-			alldone.Done()
-		}(domain)
+		domainCount := ReadDomainCount(vs, conf.DAPhase)
+
+		alldone := sync.WaitGroup{}
+		alldone.Add(domainCount)
+
+		// prev da results
+		for domain := 1; domain <= domainCount; domain++ {
+			go func(domain int) {
+				daDir := folders.DAWorkDir(start, domain, step)
+				vs.LogInfo("Copy wrfinput_d%02d to %s", domain, host)
+				vs.Copy(daDir.Join("wrfvar_output"), wrfDir.Join("wrfinput_d%02d", domain))
+				vs.LogInfo("Copy done")
+				alldone.Done()
+			}(domain)
+		}
+		alldone.Wait()
 	}
-	alldone.Wait()
 }

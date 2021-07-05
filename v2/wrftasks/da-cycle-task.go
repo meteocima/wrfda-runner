@@ -56,8 +56,8 @@ func NewDACycleTask(startDate time.Time, cycle int) *tasks.Task {
 			hosts = append(hosts, "simulation")
 		}
 
-		for _, host := range hosts {
-			runner.BuildDAStepDir(vs, startDate, endDate, cycle, host)
+		for idx, host := range hosts {
+			runner.BuildDAStepDir(vs, startDate, endDate, cycle, host, idx == 0)
 		}
 
 		runner.RunDAStep(vs, startDate, cycle)
@@ -66,8 +66,8 @@ func NewDACycleTask(startDate time.Time, cycle int) *tasks.Task {
 			return nil
 		}
 
-		for _, host := range hosts {
-			runner.BuildWRFDir(vs, startDate, endDate, cycle, host)
+		for idx, host := range hosts {
+			runner.BuildWRFDir(vs, startDate, endDate, cycle, host, idx == 0)
 		}
 		runner.RunWRFStep(vs, startDate, cycle)
 

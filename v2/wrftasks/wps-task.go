@@ -43,14 +43,14 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 
 		alldone := sync.WaitGroup{}
 		alldone.Add(len(hosts))
-		for _, host := range hosts {
-			go func(host string) {
+		for idx, host := range hosts {
+			go func(host string, idx int) {
 				workdirOnHost := vpath.New(host, workdirOnOrchestrator.Path)
 				if !vs.Exists(workdirOnHost) {
-					runner.BuildWorkdirForDate(vs, workdirOnHost, conf.WPSThenDAPhase, startDate, endDate)
+					runner.BuildWorkdirForDate(vs, workdirOnHost, conf.WPSThenDAPhase, startDate, endDate, idx == 0)
 				}
 				alldone.Done()
-			}(host)
+			}(host, idx)
 		}
 		alldone.Wait()
 
