@@ -24,6 +24,8 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 	wrfDir := folders.WRFWorkDir(start, step)
 
 	logFile := wrfDir.Join("rsl.out.0000")
+	vs.LogInfo("logging from file %s", logFile.String())
+
 	vs.Exec(
 		vpath.New(wrfDir.Host, "mpirun"),
 		[]string{"-n", conf.Config.Procs.WrfstepProcCount, "./wrf.exe"},

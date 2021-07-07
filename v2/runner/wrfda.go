@@ -125,6 +125,7 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 	daDir := folders.DAWorkDir(start, domain, step)
 
 	logFile := daDir.Join("rsl.out.0000")
+	vs.LogInfo("logging from file %s", logFile.String())
 	vs.Exec(
 		vpath.New("simulation", "mpirun"),
 		[]string{"-n", conf.Config.Procs.WrfdaProcCount, "./da_wrfvar.exe"},
