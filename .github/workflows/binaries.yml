@@ -26,7 +26,7 @@ jobs:
       run: |
         cd v2
         go build -o ../wrfda-runner -ldflags="-X 'main.Version="$GIT_TAG_NAME"'" 
-        ./wrfda-runner -v
+        ../wrfda-runner -v
     
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
