@@ -171,9 +171,7 @@ Show version: wrfda-run -v
 	}
 
 	if *stepF == "" {
-		err = runner.Run(
-			dates.Periods[0].Start,
-			dates.Periods[0].Start.Add(dates.Periods[0].Duration),
+		err = runner.Run(dates.Periods,
 			wd, phase, input, os.Stdout, os.Stderr,
 		)
 		if err != nil {

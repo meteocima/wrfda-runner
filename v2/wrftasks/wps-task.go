@@ -47,7 +47,7 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 			go func(host string, idx int) {
 				workdirOnHost := vpath.New(host, workdirOnOrchestrator.Path)
 				if !vs.Exists(workdirOnHost) {
-					runner.BuildWorkdirForDate(vs, workdirOnHost, conf.WPSThenDAPhase, startDate, endDate, idx == 0)
+					runner.BuildWorkdirForDate(vs, workdirOnHost, conf.WPSThenDAPhase, startDate, idx == 0)
 				}
 				alldone.Done()
 			}(host, idx)

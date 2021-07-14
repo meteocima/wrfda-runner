@@ -14,6 +14,7 @@ import (
 	"github.com/meteocima/virtual-server/vpath"
 	"github.com/meteocima/wrfda-runner/v2/conf"
 	"github.com/meteocima/wrfda-runner/v2/folders"
+	"github.com/parro-it/fileargs"
 )
 
 // ReadDomainCount ...
@@ -87,7 +88,7 @@ func RemoveRunFolder(startDate time.Time, workdir vpath.VirtualPath, logWriter i
 }
 
 // Run ...
-func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.RunPhase, input conf.InputDataset,
+func Run(periods []*fileargs.Period, workdir vpath.VirtualPath, phase conf.RunPhase, input conf.InputDataset,
 	logWriter io.Writer, detailLogWriter io.Writer,
 ) error {
 	vs := ctx.New(os.Stdin, logWriter, detailLogWriter)
@@ -98,15 +99,17 @@ func Run(startDate, endDate time.Time, workdir vpath.VirtualPath, phase conf.Run
 
 	domainCount := ReadDomainCount(vs, phase)
 
-	//for dt := startDate; dt.Unix() < endDate.Unix(); dt = dt.Add(time.Hour * 24) {
-	vs.LogInfo("STARTING RUN FOR DATE %s", startDate.Format("2006010215"))
-	dir := folders.WorkdirForDate(startDate)
-	BuildWorkdirForDate(vs, dir, phase, startDate, endDate, true)
-	runWRFDA(vs, phase, startDate, endDate, input, domainCount)
-	if vs.Err == nil {
-		vs.LogInfo("RUN FOR DATE %s COMPLETED", startDate.Format("2006010215"))
+	for _, period := range periods {
+		start := period.Start
+		duration := period.Duration
+		vs.LogInfo("STARTING RUN FOR DATE %s, with a duration of %d", start.Format("2006010215"), int(duration.Hours()))
+		dir := folders.WorkdirForDate(start)
+		BuildWorkdirForDate(vs, dir, phase, start, true)
+		runWRFDA(vs, phase, start, start.Add(duration), input, domainCount)
+		if vs.Err == nil {
+			vs.LogInfo("RUN FOR DATE %s COMPLETED", start.Format("2006010215"))
+		}
 	}
-	//}
 
 	return vs.Err
 }
@@ -193,7 +196,7 @@ func cpObservations(vs *ctx.Context, cycle int, startDate time.Time, host string
 }
 
 // BuildWorkdirForDate ...
-func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.RunPhase, startDate, endDate time.Time, mainHost bool) {
+func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.RunPhase, startDate time.Time, mainHost bool) {
 	if vs.Err != nil {
 		return
 	}
