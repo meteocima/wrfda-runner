@@ -24,7 +24,8 @@ jobs:
 
     - name: Build binaries
       run: |
-        go build -o wrfda-runner -ldflags="-X 'main.Version="$GIT_TAG_NAME"'" 
+        cd v2
+        go build -o ../wrfda-runner -ldflags="-X 'main.Version="$GIT_TAG_NAME"'" 
         ./wrfda-runner -v
     
     - name: Upload binaries to release
