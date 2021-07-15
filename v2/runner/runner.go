@@ -184,7 +184,12 @@ func cpObservations(vs *ctx.Context, cycle int, startDate time.Time, host string
 
 	vs.LogInfo("Copy radar for cycle %d to %s: %s -> %s", cycle, host, src, dst)
 	vs.Copy(src, dst)
-	vs.LogInfo("Copy done")
+	if vs.Err == nil {
+		vs.LogInfo("Copy done")
+	} else {
+		src = folders.AlternativeRadarObsArchive(startDate, cycle)
+		vs.Copy(src, dst)
+	}
 
 	src = folders.StationsObsArchive(startDate, cycle)
 	if vs.Exists(src) {
