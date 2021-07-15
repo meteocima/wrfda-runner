@@ -188,6 +188,7 @@ func cpObservations(vs *ctx.Context, cycle int, startDate time.Time, host string
 		vs.LogInfo("Copy done")
 	} else {
 		src = folders.AlternativeRadarObsArchive(startDate, cycle)
+		vs.Err = nil
 		vs.Copy(src, dst)
 	}
 
