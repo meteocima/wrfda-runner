@@ -199,6 +199,7 @@ Show version: wrfda-run -v
 	default:
 		log.Fatalf("Unknown step type %s", parts[1])
 	}
+
 	runner.RunSingleStep(dates.Periods[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
 
 }
