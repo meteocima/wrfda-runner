@@ -29,9 +29,9 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 		endDate := startDate.Add(48 * time.Hour)
 
 		workdirOnOrchestrator := folders.WorkdirForDate(startDate)
-		if !vs.Exists(workdirOnOrchestrator) {
-			runner.BuildWorkdirForDate(vs, workdirOnOrchestrator, conf.WPSThenDAPhase, startDate, endDate)
-		}
+		//if !vs.Exists(workdirOnOrchestrator) {
+		//	runner.BuildWorkdirForDate(vs, workdirOnOrchestrator, conf.WPSThenDAPhase, startDate, endDate)
+		//}
 
 		hostsS, hasHosts := conf.Config.Env["I_MPI_HYDRA_HOSTS_GROUP"]
 
