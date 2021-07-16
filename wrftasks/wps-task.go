@@ -1,5 +1,6 @@
 package wrftasks
 
+/*
 import (
 	"fmt"
 	"time"
@@ -47,3 +48,4 @@ func NewWPSTask(startDate time.Time) *tasks.Task {
 	tsk.Description = fmt.Sprintf("WPS preprocessing for date %s", dtPart)
 	return tsk
 }
+*/
