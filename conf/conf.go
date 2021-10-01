@@ -49,8 +49,17 @@ type ProcsConf struct {
 // Configuration contains all configuration
 // sub structure (at the moment, only a FoldersConf struct.)
 type Configuration struct {
-	Folders FoldersConf
-	Procs   ProcsConf
+	Folders    FoldersConf
+	Procs      ProcsConf
+	MPIOptions []string
+}
+
+// MkMPIOptions ...
+func MkMPIOptions(options ...string) []string {
+	var res []string
+	res = append(res, Config.MPIOptions...)
+	res = append(res, options...)
+	return res
 }
 
 // Config is the runtime configuration readed from file.

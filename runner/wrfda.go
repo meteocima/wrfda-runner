@@ -118,7 +118,7 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 	logFile := daDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New("localhost", "mpirun"),
-		[]string{"-n", conf.Config.Procs.WrfdaProcCount, "./da_wrfvar.exe"},
+		conf.MkMPIOptions("-n", conf.Config.Procs.WrfdaProcCount, "./da_wrfvar.exe"),
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        daDir,

@@ -25,7 +25,7 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 	logFile := wrfDir.Join("rsl.out.0000")
 	vs.Exec(
 		vpath.New(wrfDir.Host, "mpirun"),
-		[]string{"-n", conf.Config.Procs.WrfstepProcCount, "./wrf.exe"},
+		conf.MkMPIOptions("-n", conf.Config.Procs.WrfstepProcCount, "./wrf.exe"),
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        wrfDir,
