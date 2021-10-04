@@ -46,18 +46,22 @@ type ProcsConf struct {
 	RealProcCount string
 }
 
+type MPIConf struct {
+	AdditionalOptions []string
+}
+
 // Configuration contains all configuration
 // sub structure (at the moment, only a FoldersConf struct.)
 type Configuration struct {
-	Folders    FoldersConf
-	Procs      ProcsConf
-	MPIOptions []string
+	Folders FoldersConf
+	Procs   ProcsConf
+	MPI     MPIConf
 }
 
 // MkMPIOptions ...
 func MkMPIOptions(options ...string) []string {
 	var res []string
-	res = append(res, Config.MPIOptions...)
+	res = append(res, Config.MPI.AdditionalOptions...)
 	res = append(res, options...)
 	return res
 }
