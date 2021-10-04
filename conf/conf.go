@@ -5,6 +5,7 @@ package conf
 // for the command.
 
 import (
+	"fmt"
 	"path"
 	"strings"
 
@@ -63,6 +64,7 @@ func MkMPIOptions(options ...string) []string {
 	var res []string
 	res = append(res, Config.MPI.AdditionalOptions...)
 	res = append(res, options...)
+	fmt.Println(res)
 	return res
 }
 
