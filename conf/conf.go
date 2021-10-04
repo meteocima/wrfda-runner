@@ -47,6 +47,10 @@ type ProcsConf struct {
 	RealProcCount string
 }
 
+// MPIConf contains additional options
+// to use in mpirun calls.
+// You can use MkMPIOptions function to build
+// an array of command arguments in a practical way.
 type MPIConf struct {
 	AdditionalOptions []string
 }
@@ -59,7 +63,9 @@ type Configuration struct {
 	MPI     MPIConf
 }
 
-// MkMPIOptions ...
+// MkMPIOptions build an array of command arguments
+// merging given options with `AdditionalOptions` as read
+// from configuration file.
 func MkMPIOptions(options ...string) []string {
 	var res []string
 	res = append(res, Config.MPI.AdditionalOptions...)
