@@ -47,14 +47,15 @@ func GFSSources(startDate time.Time) vpath.VirtualPath {
 	return gfsSources
 }
 
-func RadarObsForDate(startDate time.Time, cycle int) vpath.VirtualPath {
+func RadarObsForDateAndDomain(startDate time.Time, domain, cycle int) vpath.VirtualPath {
 	localPath := WorkdirForDate(startDate)
 	workdir := vpath.New("simulation", localPath.Path)
 	observationDir := workdir.Join("observations")
 
 	// dt is the date of the first cycle assimilation
 	dt := startDate.Add(time.Duration(-6+3*(cycle-1)) * time.Hour)
-	return observationDir.Join("ob.radar.%s", dt.Format("2006010215"))
+	return observationDir.Join("ob.radar.%s_dom%02d", dt.Format("2006010215"), domain)
+	//return observationDir.Join("ob.radar.%s", dt.Format("2006010215"))
 }
 
 func StationsObsForDate(startDate time.Time, cycle int) vpath.VirtualPath {
@@ -67,10 +68,11 @@ func StationsObsForDate(startDate time.Time, cycle int) vpath.VirtualPath {
 	return observationDir.Join("ob.ascii.%s", dt.Format("2006010215"))
 }
 
-func RadarObsArchive(startDate time.Time, cycle int) vpath.VirtualPath {
+func RadarObsArchiveForDateAndDomain(startDate time.Time, domain, cycle int) vpath.VirtualPath {
 	// dt is the date of the first cycle assimilation
 	dt := startDate.Add(time.Duration(-6+3*(cycle-1)) * time.Hour)
-	return Cfg.ObservationsArchive.Join("ob.radar.%s", dt.Format("2006010215"))
+	return Cfg.ObservationsArchive.Join("ob.radar.%s_dom%02d", dt.Format("2006010215"), domain)
+	//return Cfg.ObservationsArchive.Join("ob.radar.%s", dt.Format("2006010215"))
 }
 
 func StationsObsArchive(startDate time.Time, cycle int) vpath.VirtualPath {

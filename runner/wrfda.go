@@ -103,7 +103,7 @@ func buildDADirInDomain(vs *ctx.Context, start, end time.Time, step, domain int)
 
 	// link observations
 
-	vs.Link(folders.RadarObsForDate(start, step), daDir.Join("ob.radar"))
+	vs.Link(folders.RadarObsForDateAndDomain(start, domain, step), daDir.Join("ob.radar"))
 	vs.Link(folders.StationsObsForDate(start, step), daDir.Join("ob.ascii"))
 }
 

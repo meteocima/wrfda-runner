@@ -103,7 +103,7 @@ func Run(periods []*fileargs.Period, workdir vpath.VirtualPath, phase conf.RunPh
 		duration := period.Duration
 		vs.LogInfo("STARTING RUN FOR DATE %s, with a duration of %d", start.Format("2006010215"), int(duration.Hours()))
 		dir := folders.WorkdirForDate(start)
-		BuildWorkdirForDate(vs, dir, phase, start)
+		BuildWorkdirForDate(vs, domainCount, dir, phase, start)
 		runWRFDA(vs, phase, start, start.Add(duration), input, domainCount)
 		if vs.Err == nil {
 			vs.LogInfo("RUN FOR DATE %s COMPLETED", start.Format("2006010215"))
@@ -175,20 +175,23 @@ func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepTyp
 	}
 }
 
-func cpObservations(vs *ctx.Context, cycle int, startDate time.Time) {
-	src := folders.RadarObsArchive(startDate, cycle)
-	dst := folders.RadarObsForDate(startDate, cycle)
-	fmt.Println(src, dst)
-	vs.Copy(src, dst)
+func cpObservations(vs *ctx.Context, maxdom, cycle int, startDate time.Time) {
 
-	src = folders.StationsObsArchive(startDate, cycle)
-	dst = folders.StationsObsForDate(startDate, cycle)
+	for i := 1; i <= maxdom; i++ {
+		src := folders.RadarObsArchiveForDateAndDomain(startDate, i, cycle)
+		dst := folders.RadarObsForDateAndDomain(startDate, i, cycle)
+		fmt.Println(src, dst)
+		vs.Copy(src, dst)
+	}
+
+	src := folders.StationsObsArchive(startDate, cycle)
+	dst := folders.StationsObsForDate(startDate, cycle)
 	fmt.Println(src, dst)
 	vs.Copy(src, dst)
 }
 
 // BuildWorkdirForDate ...
-func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.RunPhase, startDate time.Time) {
+func BuildWorkdirForDate(vs *ctx.Context, maxdom int, workdir vpath.VirtualPath, phase conf.RunPhase, startDate time.Time) {
 	if vs.Err != nil {
 		return
 	}
@@ -219,8 +222,8 @@ func BuildWorkdirForDate(vs *ctx.Context, workdir vpath.VirtualPath, phase conf.
 
 	// Observations - weather stations and radars
 	if phase == conf.DAPhase || phase == conf.WPSThenDAPhase {
-		cpObservations(vs, 1, startDate)
-		cpObservations(vs, 2, startDate)
-		cpObservations(vs, 3, startDate)
+		cpObservations(vs, maxdom, 1, startDate)
+		cpObservations(vs, maxdom, 2, startDate)
+		cpObservations(vs, maxdom, 3, startDate)
 	}
 }
