@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	vsConfig "github.com/meteocima/virtual-server/config"
@@ -186,7 +185,7 @@ func cpObservations(vs *ctx.Context, maxdom, cycle int, startDate time.Time) {
 	}
 
 	src := folders.StationsObsArchive(startDate, cycle)
-	dst := folders.StationsObsForDate(startDate, cycle)
+	dst := folders.StationsObsForDate(startDate, cycle, "localhost")
 	fmt.Println(src, dst)
 	vs.Copy(src, dst)
 }
@@ -221,7 +220,7 @@ func BuildWorkdirForDate(vs *ctx.Context, maxdom int, workdir vpath.VirtualPath,
 	vs.LogInfo("Copy GFS files to %s", h)
 
 	//files := make(chan vpath.VirtualPath)
-	var alldone sync.WaitGroup
+	//var alldone sync.WaitGroup
 
 	if phase == conf.WPSPhase || phase == conf.WPSThenDAPhase {
 		// GFS
