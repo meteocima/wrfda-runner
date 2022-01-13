@@ -28,7 +28,4 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 *.backup
-fixtures/testrun/inputs
-fixtures/testrun/202012??
 wrfda-runner
-fixtures/testrun/outargs.txt
