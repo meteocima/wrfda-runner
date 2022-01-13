@@ -9,12 +9,14 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "/mnt/repos/cima/wrfda-runner/v2/cli.go",
+            "program": "/mnt/repos/cima/wrfda-runner/v2",
             "env": {},
-            "cwd": "fixtures/testrun",
+            "cwd": "/mnt/repos/cima/wrfda-runner/v2/fixtures/testrun",
             "args": [
-                 "-p", "DA",
+                 "-p", "WPSDA",
                 ".",
+                "2021102000",
+                "2021102100",
                 
             ]
         }

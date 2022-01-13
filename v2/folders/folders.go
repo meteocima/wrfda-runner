@@ -87,5 +87,5 @@ func AlternativeRadarObsArchive(startDate time.Time, cycle int) vpath.VirtualPat
 func StationsObsArchive(startDate time.Time, cycle int) vpath.VirtualPath {
 	// dt is the date of the first cycle assimilation
 	dt := startDate.Add(time.Duration(-6+3*(cycle-1)) * time.Hour)
-	return Cfg.ObservationsArchive.Join("ob.ascii_%s00", dt.Format("2006010215"))
+	return Cfg.ObservationsArchive.Join("ob.ascii.%s", dt.Format("2006010215"))
 }

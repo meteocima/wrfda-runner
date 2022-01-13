@@ -29,3 +29,5 @@
 # vendor/
 *.backup
 wrfda-runner
+
+**/ObservationsArchive/ob.*
