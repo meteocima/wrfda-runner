@@ -32,7 +32,7 @@ func RunWRFStep(vs *ctx.Context, start time.Time, step int) {
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        wrfDir,
-			Env:        conf.Config.Env.ToSlice(),
+			//Env:        conf.Config.Env.ToSlice(),
 		},
 	)
 

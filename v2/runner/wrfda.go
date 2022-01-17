@@ -133,7 +133,7 @@ func runDAStepInDomain(vs *ctx.Context, start time.Time, step, domain int) {
 		&connection.RunOptions{
 			OutFromLog: &logFile,
 			Cwd:        daDir,
-			Env:        conf.Config.Env.ToSlice(),
+			//Env:        conf.Config.Env.ToSlice(),
 		},
 	)
 
