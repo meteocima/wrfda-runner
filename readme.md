@@ -7,12 +7,12 @@ assimilating radars and weather forecast observations.
 ## Work environment preparation.
 
 The command must run in a work directory containing a `wrfda-runner.cfg` config file. 
-This file should be in a toml format, and allows to customize the path of all others 
+This file should be in toml format, and allows to customize the path of all others 
 external files and directories needed by the process.
 
-The `wrfda-runner.cfg` files contains following mandatory variables:
+The config files contains following variables:
 
-* __GeodataDir__	-	path to a directory containing static geographic data.
+* __GeodataDir__	-	path to a directory containing static geographic data used by geogrid.exe.
 * __CovarMatrixesDir__-	path to a directory containing background errors of covariance matrices.
 * __WPSPrg__-	path to compiled binaries of the WPS program.
 * __WRFDAPrg__-	path to compiled binaries of the WRF-DA program.
