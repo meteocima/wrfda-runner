@@ -50,7 +50,7 @@ WPS results files and/or DA results files.
 
 #### Dates arguments
 
-All arguments that follows `workdir`are interpreted as start dates of multiple simulations that are executed serially.
+All arguments that follows `workdir` are interpreted as start dates of multiple simulations that are executed serially.
 
 **N.B. When we refer to start date, we mean the date and hour of the first hour forecasted.**
 
