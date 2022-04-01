@@ -93,14 +93,15 @@ func main() {
 
 	if len(args) == 1 {
 		dates = readInputArgs(&input, wd)
+		cfgFile = vpath.Local(dates.CfgPath)
+
 	} else {
 		dates = datesFromArgs(args, wd)
-	}
+		cfgFile = vpath.Local(dates.CfgPath)
 
-	cfgFile = vpath.Local(dates.CfgPath)
-
-	if outArgsFileF != nil && *outArgsFileF != "" {
-		writeOutargs(outArgsFileF, input, dates)
+		if outArgsFileF != nil && *outArgsFileF != "" {
+			writeOutargs(outArgsFileF, input, dates)
+		}
 	}
 
 	err = runner.Init(cfgFile, wd)
