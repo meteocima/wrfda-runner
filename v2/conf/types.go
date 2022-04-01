@@ -1,5 +1,9 @@
 package conf
 
+import (
+	"fmt"
+)
+
 // RunPhase ...
 type RunPhase int
 
@@ -16,8 +20,40 @@ const (
 type InputDataset int
 
 const (
-	// GFS ...
-	GFS InputDataset = iota
-	// IFS ...
+	Unspecified InputDataset = iota
+	GFS
 	IFS
 )
+
+func (phase *RunPhase) FromString(phaseS string) error {
+	if phaseS == "WPS" {
+		*phase = WPSPhase
+		return nil
+	}
+
+	if phaseS == "DA" {
+		*phase = DAPhase
+		return nil
+	}
+
+	if phaseS == "WPSDA" {
+		*phase = WPSThenDAPhase
+		return nil
+	}
+
+	return fmt.Errorf("Unknown phase `%s`", phaseS)
+}
+
+func (input *InputDataset) FromString(inputS string) {
+	if inputS == "GFS" {
+		*input = GFS
+		return
+	}
+
+	if inputS == "IFS" {
+		*input = IFS
+		return
+	}
+
+	*input = Unspecified
+}

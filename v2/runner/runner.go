@@ -138,43 +138,6 @@ func runWRFDA(vs *ctx.Context, phase conf.RunPhase, startDate, endDate time.Time
 	}
 }
 
-// StepType ...
-type StepType int
-
-const (
-	// BuildDA ...
-	BuildDA StepType = iota
-	// BuildWRF ...
-	BuildWRF
-	// RunDA ...
-	RunDA
-	// RunWRF ...
-	RunWRF
-)
-
-// RunSingleStep ...
-func RunSingleStep(startDate time.Time, ds conf.InputDataset, cycle int, stepType StepType, logWriter io.Writer, detailLogWriter io.Writer) {
-	endDate := startDate.Add(48 * time.Hour)
-	vs := ctx.New(os.Stdin, logWriter, detailLogWriter)
-	//domainCount := ReadDomainCount(vs, phase)
-
-	switch stepType {
-	case BuildDA:
-		BuildDAStepDir(vs, startDate, endDate, cycle, "simulation", true)
-
-	case BuildWRF:
-		BuildWRFDir(vs, startDate, endDate, cycle, "simulation", true)
-
-	case RunDA:
-		RunDAStep(vs, startDate, cycle)
-
-	case RunWRF:
-		RunWRFStep(vs, startDate, cycle)
-	default:
-		panic("unknown step type")
-	}
-}
-
 func cpObservations(vs *ctx.Context, maxdom, cycle int, startDate time.Time) {
 
 	for i := 1; i <= maxdom; i++ {

@@ -2,13 +2,13 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"time"
@@ -23,21 +23,38 @@ import (
 // Version of the command
 var Version string = "development"
 
-func main() {
-	usage := `
-Usage: wrfda-run [-p WPS|DA|WPSDA] [-i GFS|IFS] [-outargs <argsfile>] <workdir> [startdate enddate]
-format for dates: YYYYMMDDHH
-Note: if you omit startdate and enddate, they are read from an arguments.txt
-files that should be put in a subdirectory of workdir named "inputs"
-default for -p is WPSDA
-default for -i is GFS (you can omit this argument if you're using an arguments.txt file.)
+const usage = `
+Usage: wrfda-runner [-v ][-p WPS|DA|WPSDA] [-i GFS|IFS] [-outargs <argsfile>] <workdir> [startdate enddate]
 
-Show version: wrfda-run -v
+-v print version to stdout
+-p specifiy the phase to execute. Default is WPSDA
+-i specify which kind of dataset to use as guide. Default for -i is GFS. If you omit the option and 
+you are using an arguments.txt file, the command will use GFS if the configuration file name specified 
+there ends in .gfs.cfg, and IFS if it ends in .ifs.cfg
+-outargs if specified, the command write an inputs/arguments.txt file suitable to be used as an input 
+arguments.txt file. You cannot use this option if you omit startdate and enddate arguments.
+
+To choose which dates to elaborate you can use startdate and enddate arguments if you need a single date.
+Otherwise, you omit this two arguments, and an inputs/arguments.txt will be read that contains al lthe dates 
+to run. Format for dates is YYYYMMDDHH.
+
+workdir must be set to the path of a directory containing a prepared environment.
+
+-v show version of the executable
 `
 
-	showver := flag.Bool("v", false, "print version to stdout")
+func failed(err error) {
+	log.Fatalf("%s\n\n%s\n", err, usage)
+}
+
+func syntaxInvalid() {
+	failed(errors.New("Invalid arguments provided"))
+}
+
+func main() {
+
+	showver := flag.Bool("v", false, "")
 	phaseF := flag.String("p", "WPSDA", "")
-	stepF := flag.String("s", "", "")
 	inputF := flag.String("i", "GFS", "")
 	outArgsFileF := flag.String("outargs", "", "")
 
@@ -51,118 +68,39 @@ Show version: wrfda-run -v
 	var phase conf.RunPhase
 	var input conf.InputDataset
 
-	if *phaseF == "WPS" {
-		phase = conf.WPSPhase
-	} else if *phaseF == "DA" {
-		phase = conf.DAPhase
-	} else if *phaseF == "WPSDA" {
-		phase = conf.WPSThenDAPhase
-	} else {
-		log.Fatalf("%s\nUnknown phase `%s`", usage, *phaseF)
+	if err := phase.FromString(*phaseF); err != nil {
+		failed(err)
 	}
 
-	if *inputF == "GFS" {
-		input = conf.GFS
-	} else if *inputF == "IFS" {
-		input = conf.IFS
-	} else if outArgsFileF == nil || *outArgsFileF == "" {
-		log.Fatalf("%s\nUnknown input dataset `%s`", usage, *phaseF)
-	}
+	input.FromString(*inputF)
 
 	args := flag.Args()
 	if len(args) < 1 {
-		log.Fatal(usage)
+		syntaxInvalid()
 	}
 
 	var err error
 	var dates *fileargs.FileArguments
 	var cfgFile vpath.VirtualPath
+	var wd vpath.VirtualPath
 
 	absWd, err := filepath.Abs(args[0])
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	wd := vpath.Local(absWd)
+	wd = vpath.Local(absWd)
 
 	if len(args) == 1 {
-		dates, err = runner.ReadTimes("inputs/arguments.txt")
-		if err != nil {
-			log.Fatal(err.Error() + "\n")
-		}
-
-		if inputF == nil {
-			if strings.HasSuffix(dates.CfgPath, ".gfs.cfg") {
-				input = conf.GFS
-			}
-
-			if strings.HasSuffix(dates.CfgPath, ".ifs.cfg") {
-				input = conf.IFS
-			}
-
-			log.Fatalf("%s\nUnknown input dataset `%s` must end in .gfs.cfg or .ifs.cfg", usage, dates.CfgPath)
-		}
-		dates.CfgPath = wd.Join(dates.CfgPath).Path
+		dates = readInputArgs(&input, wd)
 	} else {
-		dates = &fileargs.FileArguments{
-			Periods: []*fileargs.Period{},
-			CfgPath: "",
-		}
-		startDate, err := time.Parse("2006010215", args[1])
-		if err != nil {
-			log.Fatal(usage + err.Error() + "\n")
-		}
-		endDate, err := time.Parse("2006010215", args[2])
-		if err != nil {
-			log.Fatal(usage + err.Error() + "\n")
-		}
-
-		duration := endDate.Sub(startDate)
-		dates.Periods = append(dates.Periods, &fileargs.Period{
-			Start:    startDate,
-			Duration: duration,
-		})
-		/*
-			for dt := startDate; dt.Before(endDate) || dt.Equal(endDate); dt = dt.Add(24 * time.Hour) {
-				dates.Periods = append(dates.Periods, &fileargs.Period{
-					Start:    dt,
-					Duration: 48 * time.Hour,
-				})
-			}
-		*/
-
-		dates.CfgPath = wd.Join("wrfda-runner.cfg").Path
+		dates = datesFromArgs(args, wd)
 	}
+
 	cfgFile = vpath.Local(dates.CfgPath)
 
 	if outArgsFileF != nil && *outArgsFileF != "" {
-		outargs := *outArgsFileF
-
-		_, err := os.Stat(outargs)
-		fileargsExists := err == nil
-
-		var buf lineBuf
-		if !fileargsExists {
-			if input == conf.GFS {
-				buf.AddLine("italy-config.gfs.cfg")
-			} else {
-				buf.AddLine("france-config.ifs.cfg")
-			}
-		}
-
-		for _, p := range dates.Periods {
-			buf.AddLine(p.String())
-		}
-
-		if fileargsExists {
-			err = buf.AppendTo(outargs)
-		} else {
-			err = buf.WriteTo(outargs)
-		}
-
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+		writeOutargs(outArgsFileF, input, dates)
 	}
 
 	err = runner.Init(cfgFile, wd)
@@ -170,38 +108,89 @@ Show version: wrfda-run -v
 		log.Fatal(err.Error())
 	}
 
-	if *stepF == "" {
-		err = runner.Run(dates.Periods,
-			wd, phase, input, os.Stdout, os.Stderr,
-		)
+	err = runner.Run(dates.Periods,
+		wd, phase, input, os.Stdout, os.Stderr,
+	)
 
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		return
-	}
-
-	parts := strings.Split(*stepF, "-")
-	cycleS := parts[0]
-	cycle, err := strconv.ParseInt(cycleS, 10, 64)
 	if err != nil {
-		panic(err)
-	}
-	var stepType runner.StepType
-	switch parts[1] {
-	case "BuildDA":
-		stepType = runner.BuildDA
-	case "BuildWRF":
-		stepType = runner.BuildWRF
-	case "RunDA":
-		stepType = runner.RunDA
-	case "RunWRF":
-		stepType = runner.RunWRF
-	default:
-		log.Fatalf("Unknown step type %s", parts[1])
+		log.Fatal(err.Error())
 	}
 
-	runner.RunSingleStep(dates.Periods[0].Start, input, int(cycle), stepType, os.Stdout, os.Stderr)
+}
+
+func datesFromArgs(args []string, wd vpath.VirtualPath) *fileargs.FileArguments {
+	dates := &fileargs.FileArguments{
+		Periods: []*fileargs.Period{},
+		CfgPath: "",
+	}
+	startDate, err := time.Parse("2006010215", args[1])
+	if err != nil {
+		log.Fatal(usage + err.Error() + "\n")
+	}
+	endDate, err := time.Parse("2006010215", args[2])
+	if err != nil {
+		log.Fatal(usage + err.Error() + "\n")
+	}
+
+	duration := endDate.Sub(startDate)
+	dates.Periods = append(dates.Periods, &fileargs.Period{
+		Start:    startDate,
+		Duration: duration,
+	})
+
+	dates.CfgPath = wd.Join("wrfda-runner.cfg").Path
+	return dates
+}
+
+func readInputArgs(input *conf.InputDataset, wd vpath.VirtualPath) *fileargs.FileArguments {
+	dates, err := runner.ReadTimes("inputs/arguments.txt")
+	if err != nil {
+		log.Fatal(err.Error() + "\n")
+	}
+
+	if *input == conf.Unspecified {
+		if strings.HasSuffix(dates.CfgPath, ".gfs.cfg") {
+			*input = conf.GFS
+		}
+
+		if strings.HasSuffix(dates.CfgPath, ".ifs.cfg") {
+			*input = conf.IFS
+		}
+
+		failed(fmt.Errorf("Unknown input dataset `%s` must end in .gfs.cfg or .ifs.cfg", dates.CfgPath))
+	}
+	dates.CfgPath = wd.Join(dates.CfgPath).Path
+	return dates
+}
+
+func writeOutargs(outArgsFileF *string, input conf.InputDataset, dates *fileargs.FileArguments) {
+	outargs := *outArgsFileF
+
+	_, err := os.Stat(outargs)
+	fileargsExists := err == nil
+
+	var buf lineBuf
+	if !fileargsExists {
+		if input == conf.GFS {
+			buf.AddLine("italy-config.gfs.cfg")
+		} else {
+			buf.AddLine("france-config.ifs.cfg")
+		}
+	}
+
+	for _, p := range dates.Periods {
+		buf.AddLine(p.String())
+	}
+
+	if fileargsExists {
+		err = buf.AppendTo(outargs)
+	} else {
+		err = buf.WriteTo(outargs)
+	}
+
+	if err != nil {
+		failed(err)
+	}
 
 }
 
