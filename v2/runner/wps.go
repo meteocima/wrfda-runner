@@ -138,8 +138,11 @@ func RunWPS(vs *ctx.Context, start, end time.Time) {
 	gfsDir := start.Add(-6 * time.Hour).Format(gfsDirPattern)
 
 	vs.Exec(
-		wpsDir.Join("./link_grib.csh"),
-		[]string{gfsDir},
+		vpath.Local("csh"),
+		[]string{
+			"-c",
+			"./link_grib.csh " + gfsDir,
+		},
 		&connection.RunOptions{
 			Cwd: wpsDir,
 		},
